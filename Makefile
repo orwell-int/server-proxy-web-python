@@ -12,3 +12,6 @@ coverage: env/bin/activate
 
 clean: env/bin/activate
 	. env/bin/activate && coverage erase
+
+start: env/bin/activate
+	. env/bin/activate && python orwell/proxy/main.py
