@@ -1,8 +1,13 @@
 env/bin/activate:
-	virtualenv -p python3 env
+	virtualenv -p python env
 	. env/bin/activate && pip install -r requirements.txt && pip install -e .
 
 develop: env/bin/activate
+	git submodule update --init
+	cd messages
+	./generate.sh
+	cd ../orwell
+	ln -s ../messages/orwell/messages .
 
 test: env/bin/activate
 	. env/bin/activate && nosetests

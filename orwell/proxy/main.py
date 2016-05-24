@@ -1,14 +1,29 @@
 """Web site"""
+from __future__ import print_function
+
 
 import logging
 import sys
 import os
 import socket
 import struct
+import random
+
+import zmq
+from zmq.eventloop import ioloop
+from zmq.eventloop.zmqstream import ZMQStream
+
+ioloop.install()
 
 import tornado.ioloop
 import tornado.web
 import tornado.template
+
+import orwell.messages.controller_pb2 as pb_controller
+import orwell.messages.server_game_pb2 as pb_server_game
+
+RANDOM = random.Random()
+RANDOM.seed(42)
 
 
 class MainHandler(tornado.web.RequestHandler):
@@ -19,12 +34,81 @@ class MainHandler(tornado.web.RequestHandler):
         print(broadcast.push_address + " / " + broadcast.subscribe_address)
         self._push_address = broadcast.push_address
         self._subscribe_address = broadcast.subscribe_address
+        self._context = zmq.Context.instance()
+        push_socket = self._context.socket(zmq.PUSH)
+        push_socket.connect(self._push_address)
+        self._push_stream = ZMQStream(push_socket)
+        subscribe_socket = self._context.socket(zmq.SUB)
+        subscribe_socket.connect(self._subscribe_address)
+        subscribe_socket.setsockopt(zmq.SUBSCRIBE, "")
+        self._subscribe_stream = ZMQStream(subscribe_socket)
+        self._subscribe_stream.on_recv(self._handle_message_parts)
+        self._temporary_id = "temporary_id_" + str(RANDOM.randint(0, 32768))
 
+    @tornado.web.asynchronous
     def get(self):
         content = self._loader.load("index.html").generate(
                 videofeed="oups I forgot the video",
                 status="well let's say pending")
         self.write(content)
+        hello = self._build_hello()
+        print("Send Hello: " + repr(hello))
+        self._subscribe_stream.send(hello)
+        self._push_stream.send(hello)
+
+    def _handle_message_parts(self, message_parts):
+        # print('message received: %s' % map(repr, message_parts))
+        for message in message_parts:
+            recipient, _, typed_payload = message.partition(' ')
+            message_type, _, payload = typed_payload.partition(' ')
+            self._handle_message(recipient, message_type, payload)
+
+    def _handle_message(self, recipient, message_type, payload):
+        if (self._destination_matches(recipient)):
+            if ("Welcome" == message_type):
+                self._handle_welcome(payload)
+            elif ("Goodbye" == message_type):
+                self._handle_goodbye(payload)
+            elif ("GameState" == message_type):
+                self._handle_game_state(payload)
+            else:
+                print("Message ignored: " + message_type)
+
+    def _destination_matches(self, recipient):
+        return True  # for now
+
+    def _handle_welcome(self, payload):
+        message = pb_server_game.Welcome()
+        message.ParseFromString(payload)
+        print(
+            "Welcome ; id = " + str(message.id)
+            + " ; video_address = " + message.video_address
+            + " ; video_port = " + str(message.video_port))
+        if (message.game_state):
+            print("playing ? " + str(message.game_state.playing))
+            print("time left: " + str(message.game_state.seconds))
+            for team in message.game_state.teams:
+                print(team.name + " (" + str(team.num_players)
+                        + ") -> " + str(team.score))
+        self.finish()
+
+    def _handle_goodbye(self, payload):
+        message = pb_server_game.Goodbye()
+        message.ParseFromString(payload)
+        print("Goodbye ...")
+        self.finish()
+
+    def _handle_game_state(self, payload):
+        message = pb_server_game.GameState()
+        message.ParseFromString(payload)
+        # do nothing for now
+
+    def _build_hello(self):
+        pb_message = pb_controller.Hello()
+        name = "JAMBON"
+        pb_message.name = name
+        payload = pb_message.SerializeToString()
+        return self._temporary_id + ' Hello ' + payload
 
 
 def make_app():
@@ -59,17 +143,20 @@ class Broadcast(object):
 
     def send_one_broadcast_message(self):
         try:
-            sent = self._socket.sendto("<broadcast>".encode("ascii"), self._group)
+            sent = self._socket.sendto(
+                    "<broadcast>".encode("ascii"), self._group)
             while not self._received:
                 try:
-                    self._data, self._sender = self._socket.recvfrom(self._size)
+                    self._data, self._sender = self._socket.recvfrom(
+                            self._size)
                     self._received = True
                 except socket.timeout:
                     print('timed out, no more responses', file=sys.stderr)
                     break
                 else:
                     print(
-                        'received "%s" from %s' % (self._data, self._sender),
+                        'received "%s" from %s'
+                        % (repr(self._data), self._sender),
                         file=sys.stderr)
         finally:
             print('closing socket', file=sys.stderr)
@@ -84,19 +171,22 @@ class Broadcast(object):
         # size on 8 bytes
         # Address of publisher
         # 0x00
-        assert(self._data[0] == 0xA0)
-        puller_size = self._data[1]
+        import struct
+        to_char = lambda x: struct.unpack('B', x)[0]
+        to_str = lambda x: x.decode("ascii")
+        assert(self._data[0] == '\xa0')
+        puller_size = to_char(self._data[1])
         # print("puller_size = " + str(puller_size))
         end_puller = 2 + puller_size
-        puller_address = self._data[2:end_puller].decode("ascii")
+        puller_address = to_str(self._data[2:end_puller])
         # print("puller_address = " + puller_address)
-        assert(self._data[end_puller] == 0xA1)
-        publisher_size = self._data[end_puller + 1]
+        assert(self._data[end_puller] == '\xa1')
+        publisher_size = to_char(self._data[end_puller + 1])
         # print("publisher_size = " + str(publisher_size))
         end_publisher = end_puller + 2 + publisher_size
-        publisher_address = self._data[end_puller + 2:end_publisher].decode("ascii")
+        publisher_address = to_str(self._data[end_puller + 2:end_publisher])
         # print("publisher_address = " + publisher_address)
-        assert(self._data[end_publisher] == 0x00)
+        assert(self._data[end_publisher] == '\x00')
         sender_ip, _ = self._sender
         self._push_address = puller_address.replace('*', sender_ip)
         self._subscribe_address = publisher_address.replace('*', sender_ip)
@@ -115,7 +205,11 @@ def main(argv=sys.argv[1:]):
     """Entry point for the tests and program."""
     app = make_app()
     app.listen(5000)
-    tornado.ioloop.IOLoop.current().start()
+    # tornado.ioloop.IOLoop.current().start()
+    try:
+        ioloop.IOLoop.instance().start()
+    except KeyboardInterrupt:
+        print('Interrupted')
 
 
 if ("__main__" == __name__):

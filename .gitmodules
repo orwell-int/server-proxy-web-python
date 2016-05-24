@@ -1,0 +1,3 @@
+[submodule "messages"]
+	path = messages
+	url = git://github.com/orwell-int/messages.git
