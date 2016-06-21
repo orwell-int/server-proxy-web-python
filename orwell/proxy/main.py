@@ -1,4 +1,4 @@
-"""Web site"""
+"""Web site."""
 from __future__ import print_function
 
 
@@ -18,6 +18,8 @@ ioloop.install()
 import tornado.ioloop
 import tornado.web
 import tornado.template
+
+import sockjs.tornado
 
 import orwell.messages.controller_pb2 as pb_controller
 import orwell.messages.server_game_pb2 as pb_server_game
@@ -81,15 +83,15 @@ class MainHandler(tornado.web.RequestHandler):
         message = pb_server_game.Welcome()
         message.ParseFromString(payload)
         print(
-            "Welcome ; id = " + str(message.id)
-            + " ; video_address = " + message.video_address
-            + " ; video_port = " + str(message.video_port))
+            "Welcome ; id = " + str(message.id) +
+            " ; video_address = " + message.video_address +
+            " ; video_port = " + str(message.video_port))
         if (message.game_state):
             print("playing ? " + str(message.game_state.playing))
             print("time left: " + str(message.game_state.seconds))
             for team in message.game_state.teams:
-                print(team.name + " (" + str(team.num_players)
-                        + ") -> " + str(team.score))
+                print(team.name + " (" + str(team.num_players) +
+                      ") -> " + str(team.score))
         self.finish()
 
     def _handle_goodbye(self, payload):
@@ -101,7 +103,18 @@ class MainHandler(tornado.web.RequestHandler):
     def _handle_game_state(self, payload):
         message = pb_server_game.GameState()
         message.ParseFromString(payload)
-        # do nothing for now
+        if (message.HasField("winner")):
+            status = "Game won by team " + message.winner
+        else:
+            if (message.playing):
+                status = "Game running"
+                if (message.HasField("seconds")):
+                    status += " ({} second(s) left)".format(message.seconds)
+            else:
+                status = "Game NOT running"
+        print(status)
+        for connection in OrwellConnection.all_connections:
+            connection.send(status)
 
     def _build_hello(self):
         pb_message = pb_controller.Hello()
@@ -111,10 +124,35 @@ class MainHandler(tornado.web.RequestHandler):
         return self._temporary_id + ' Hello ' + payload
 
 
+class OrwellConnection(sockjs.tornado.SockJSConnection):
+    all_connections = set()
+
+    def on_open(self, info):
+        print("on_open - info = " + str(info))
+        print("on_open - info.ip = " + str(info.ip))
+        print("on_open - info.cookies = " + str(info.cookies))
+        print("on_open - info.arguments = " + str(info.arguments))
+        print("on_open - info.headers = " + str(info.headers))
+        print("on_open - info.path = " + str(info.path))
+        OrwellConnection.all_connections.add(self)
+
+    def on_message(self, message):
+        print("on_message - message = " + str(message))
+
+    def on_close(self):
+        print("on_close")
+        OrwellConnection.all_connections.remove(self)
+
+
 def make_app():
-    return tornado.web.Application([
-        (r"/", MainHandler),
-    ])
+    router = sockjs.tornado.SockJSRouter(OrwellConnection, '/orwell')
+    static_path = os.path.join(os.getcwd(), 'data', 'static')
+    return tornado.web.Application(
+        [(r"/", MainHandler),
+         (r'/static/', tornado.web.StaticFileHandler)
+         ] + router.urls,
+        debug=True,
+        static_path=static_path)
 
 
 class Broadcast(object):
@@ -163,7 +201,7 @@ class Broadcast(object):
             self._socket.close()
 
     def decode_data(self):
-        # data (split on different lines for clarity):
+        # data (split on multiple lines for clarity):
         # 0xA0
         # size on 8 bytes
         # Address of puller
