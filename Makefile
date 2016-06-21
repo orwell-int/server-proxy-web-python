@@ -4,10 +4,8 @@ env/bin/activate:
 
 develop: env/bin/activate
 	git submodule update --init
-	cd messages
-	./generate.sh
-	cd ../orwell
-	ln -s ../messages/orwell/messages .
+	cd messages && ./generate.sh
+	cd orwell && [ -e messages ] || ln -s ../messages/orwell/messages .
 
 test: env/bin/activate
 	. env/bin/activate && nosetests
