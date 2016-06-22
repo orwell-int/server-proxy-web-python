@@ -29,7 +29,10 @@ RANDOM.seed(42)
 
 
 class MainHandler(tornado.web.RequestHandler):
+    handler = None
+
     def initialize(self):
+        # import ipdb; ipdb.set_trace()
         print(os.getcwd())
         self._loader = tornado.template.Loader("data")
         broadcast = Broadcast()
@@ -45,7 +48,8 @@ class MainHandler(tornado.web.RequestHandler):
         subscribe_socket.setsockopt(zmq.SUBSCRIBE, "")
         self._subscribe_stream = ZMQStream(subscribe_socket)
         self._subscribe_stream.on_recv(self._handle_message_parts)
-        self._temporary_id = "temporary_id_" + str(RANDOM.randint(0, 32768))
+        self._routing_id = "temporary_id_" + str(RANDOM.randint(0, 32768))
+        MainHandler.handler = self
 
     @tornado.web.asynchronous
     def get(self):
@@ -55,7 +59,7 @@ class MainHandler(tornado.web.RequestHandler):
         self.write(content)
         hello = self._build_hello()
         print("Send Hello: " + repr(hello))
-        self._subscribe_stream.send(hello)
+        # self._subscribe_stream.send(hello)
         self._push_stream.send(hello)
 
     def _handle_message_parts(self, message_parts):
@@ -86,6 +90,7 @@ class MainHandler(tornado.web.RequestHandler):
             "Welcome ; id = " + str(message.id) +
             " ; video_address = " + message.video_address +
             " ; video_port = " + str(message.video_port))
+        self._routing_id = str(message.id)
         if (message.game_state):
             print("playing ? " + str(message.game_state.playing))
             print("time left: " + str(message.game_state.seconds))
@@ -121,7 +126,39 @@ class MainHandler(tornado.web.RequestHandler):
         name = "JAMBON"
         pb_message.name = name
         payload = pb_message.SerializeToString()
-        return self._temporary_id + ' Hello ' + payload
+        return self._routing_id + ' Hello ' + payload
+
+    def send_input(self, data):
+        factor = 0.5
+        left = 0
+        right = 0
+        fire_weapon1 = False
+        fire_weapon2 = False
+        if ("LEFT" == data):
+            left = -1 * factor
+            right = 1 * factor
+        elif ("FORWARD" == data):
+            left = 1 * factor
+            right = 1 * factor
+        elif ("RIGHT" == data):
+            left = 1 * factor
+            right = -1 * factor
+        elif ("BACKWARD" == data):
+            left = -1 * factor
+            right = -1 * factor
+        elif ("FIRE1" == data):
+            fire_weapon1 = True
+        elif ("FIRE2" == data):
+            fire_weapon2 = True
+        pb_input = pb_controller.Input()
+        pb_input.move.left = left
+        pb_input.move.right = right
+        pb_input.fire.weapon1 = fire_weapon1
+        pb_input.fire.weapon2 = fire_weapon2
+        payload = pb_input.SerializeToString()
+        message = self._routing_id + ' Input ' + payload
+        # self._subscribe_stream.send(hello)
+        self._push_stream.send(message)
 
 
 class OrwellConnection(sockjs.tornado.SockJSConnection):
@@ -138,6 +175,8 @@ class OrwellConnection(sockjs.tornado.SockJSConnection):
 
     def on_message(self, message):
         print("on_message - message = " + str(message))
+        if (MainHandler.handler is not None):
+            MainHandler.handler.send_input(message)
 
     def on_close(self):
         print("on_close")
