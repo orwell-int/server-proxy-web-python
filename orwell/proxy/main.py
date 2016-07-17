@@ -8,6 +8,7 @@ import os
 import socket
 import struct
 import random
+import json
 
 import zmq
 from zmq.eventloop import ioloop
@@ -18,6 +19,7 @@ ioloop.install()
 import tornado.ioloop
 import tornado.web
 import tornado.template
+import tornado.gen
 
 import sockjs.tornado
 
@@ -54,7 +56,7 @@ class MainHandler(tornado.web.RequestHandler):
     @tornado.web.asynchronous
     def get(self):
         content = self._loader.load("index.html").generate(
-                videofeed="oups I forgot the video",
+                videofeed="/test",
                 status="well let's say pending")
         self.write(content)
         hello = self._build_hello()
@@ -62,6 +64,7 @@ class MainHandler(tornado.web.RequestHandler):
         # self._subscribe_stream.send(hello)
         self._push_stream.send(hello)
 
+    @tornado.web.asynchronous
     def _handle_message_parts(self, message_parts):
         # print('message received: %s' % map(repr, message_parts))
         for message in message_parts:
@@ -97,12 +100,28 @@ class MainHandler(tornado.web.RequestHandler):
             for team in message.game_state.teams:
                 print(team.name + " (" + str(team.num_players) +
                       ") -> " + str(team.score))
+        videofeed = message.video_address + ":" + str(message.video_port)
+        print("videofeed =", videofeed,
+              ";", len(OrwellConnection.all_connections))
+        video_url = "/video?address={}&port={}".format(
+            message.video_address,
+            str(message.video_port))
+        # video_url = "/test?address={}&port={}".format(
+            # message.video_address,
+            # str(message.video_port))
+        json_str = json.dumps({"videofeed": video_url})
+        OrwellConnection.data_to_send.append(json_str)
+        # for connection in OrwellConnection.all_connections:
+            # print("send videofeed(" + json_str + ") to", connection)
+            # connection.send(json_str)
+        print("_handle_welcome - finish")
         self.finish()
 
     def _handle_goodbye(self, payload):
         message = pb_server_game.Goodbye()
         message.ParseFromString(payload)
         print("Goodbye ...")
+        print("_handle_goodbye - finish")
         self.finish()
 
     def _handle_game_state(self, payload):
@@ -119,7 +138,7 @@ class MainHandler(tornado.web.RequestHandler):
                 status = "Game NOT running"
         print(status)
         for connection in OrwellConnection.all_connections:
-            connection.send(status)
+            connection.send(json.dumps({"status": status}))
 
     def _build_hello(self):
         pb_message = pb_controller.Hello()
@@ -161,8 +180,107 @@ class MainHandler(tornado.web.RequestHandler):
         self._push_stream.send(message)
 
 
+class VideoHandler(tornado.web.RequestHandler):
+    handler = None
+
+    def initialize(self):
+        self._data_chunk_size = 10000
+        self._stop = False
+
+    @tornado.web.asynchronous
+    @tornado.gen.coroutine
+    def get(self):
+        address = self.get_argument('address')
+        port = self.get_argument('port')
+        print("address =", address, "; port =", port)
+        # address = "192.168.0.17"
+        # port = 5000
+        self.set_header(
+            "content-type",
+            "multipart/x-mixed-replace; boundary=--ThisRandomString")
+        command = "nc {address} {port}".format(address=address, port=port)
+        command += ' | gst-launch-1.0 filesrc location=/dev/fd/0'
+        command += ' ! h264parse'
+        command += ' ! avdec_h264'
+        command += ' ! jpegenc'
+        command += ' ! multipartmux'
+        command += ' ! filesink location=/dev/stdout'
+        print("command =", command)
+        import subprocess
+        self._process = subprocess.Popen(
+            command,
+            stdout=subprocess.PIPE,
+            bufsize=-1,
+            shell=True)
+        print("starting polling loop.")
+        while (not self._stop):
+            # import datetime
+            # sys.stdout.write(" " + datetime.datetime.now().isoformat())
+            chars = self._process.stdout.read(self._data_chunk_size)
+            self.write(chars)
+            if (self._process.poll() is not None):
+                print("stopping polling loop")
+                self._stop = True
+            yield tornado.gen.Task(self.flush)
+        self._process.terminate()
+        print("TestHandler::get - finish")
+        self.finish()
+
+    def on_connection_close(self):
+        print("on_connection_close")
+        self._stop = True
+        super(self.__class__, self).on_connection_close()
+
+
+class TestHandler(tornado.web.RequestHandler):
+    handler = None
+
+    def initialize(self):
+        self._data_chunk_size = 10000
+        self._stop = False
+
+    @tornado.web.asynchronous
+    @tornado.gen.coroutine
+    def get(self):
+        self.set_header(
+            "content-type",
+            "video/ogg")
+        command = 'echo "--video boundary--" ;'
+        command += 'gst-launch-1.0 -e -q videotestsrc is-live=true' \
+            + ' ! video/x-raw, framerate=5/1, width=1024, height=768' \
+            + ' ! clockoverlay shaded-background=true font-desc="Sans 38"' \
+            + ' ! theoraenc' \
+            + ' ! oggmux max-delay=0' \
+            + ' ! filesink location=/dev/stdout'
+        import subprocess
+        self._process = subprocess.Popen(
+            command,
+            stdout=subprocess.PIPE,
+            bufsize=-1,
+            shell=True)
+        print("starting polling loop.")
+        while (not self._stop):
+            # import datetime
+            # sys.stdout.write(" " + datetime.datetime.now().isoformat())
+            chars = self._process.stdout.read(self._data_chunk_size)
+            self.write(chars)
+            if (self._process.poll() is not None):
+                print("stopping polling loop")
+                self._stop = True
+            yield tornado.gen.Task(self.flush)
+        self._process.terminate()
+        print("TestHandler::get - finish")
+        self.finish()
+
+    def on_connection_close(self):
+        print("on_connection_close")
+        self._stop = True
+        super(self.__class__, self).on_connection_close()
+
+
 class OrwellConnection(sockjs.tornado.SockJSConnection):
     all_connections = set()
+    data_to_send = []
 
     def on_open(self, info):
         print("on_open - info = " + str(info))
@@ -172,6 +290,8 @@ class OrwellConnection(sockjs.tornado.SockJSConnection):
         print("on_open - info.headers = " + str(info.headers))
         print("on_open - info.path = " + str(info.path))
         OrwellConnection.all_connections.add(self)
+        for data in OrwellConnection.data_to_send:
+            self.send(data)
 
     def on_message(self, message):
         print("on_message - message = " + str(message))
@@ -188,7 +308,9 @@ def make_app():
     static_path = os.path.join(os.getcwd(), 'data', 'static')
     return tornado.web.Application(
         [(r"/", MainHandler),
-         (r'/static/', tornado.web.StaticFileHandler)
+         (r'/static/', tornado.web.StaticFileHandler),
+         (r'/video', VideoHandler),
+         (r'/test', TestHandler),
          ] + router.urls,
         debug=True,
         static_path=static_path)

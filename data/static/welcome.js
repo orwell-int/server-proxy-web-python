@@ -13,7 +13,13 @@ $( document ).ready(
 		};
 		gConn.onmessage = function(e) {
 			console.log('Received: ' + e.data);
-			document.getElementById("status").innerHTML = e.data;
+			obj = JSON.parse(e.data);
+			if ("status" in obj) {
+				document.getElementById("status").innerHTML = obj.status;
+			}
+			if ("videofeed" in obj) {
+				document.getElementById("videofeed").setAttribute("src", obj.videofeed);
+			}
 		};
 		gConn.onclose = function() {
 			console.log('Disconnected.');
