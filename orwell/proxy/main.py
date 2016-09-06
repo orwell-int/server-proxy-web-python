@@ -9,6 +9,7 @@ import socket
 import struct
 import random
 import json
+import math
 
 import zmq
 from zmq.eventloop import ioloop
@@ -32,6 +33,8 @@ RANDOM.seed(42)
 
 class MainHandler(tornado.web.RequestHandler):
     handler = None
+    JOYSTICK_PREFIX = "joystick "
+    DEAD_ZONE = 0.2
 
     def initialize(self):
         # import ipdb; ipdb.set_trace()
@@ -169,6 +172,92 @@ class MainHandler(tornado.web.RequestHandler):
             fire_weapon1 = True
         elif ("FIRE2" == data):
             fire_weapon2 = True
+        elif (data.startswith(MainHandler.JOYSTICK_PREFIX)):
+            floor = 20.0
+            str_dico = data[len(MainHandler.JOYSTICK_PREFIX):]
+            print("str_dico = " + str_dico)
+            buttons = {}
+            for key_value in str_dico.split(";"):
+                what, _, value = key_value.partition("=")
+                if (what.startswith("a")):
+                    axis = what[1:]
+                    axis = int(axis)
+                    # print("\taxis = " + str(axis) + " ; value = " + str(value))
+                    if (0 == axis):
+                        x1 = int(float(value) * floor) / floor
+                    elif (1 == axis):
+                        y1 = -int(float(value) * floor) / floor
+                    elif (2 == axis):
+                        x2 = int(float(value) * floor) / floor
+                    elif (3 == axis):
+                        y2 = -int(float(value) * floor) / floor
+                elif (what.startswith("b")):
+                    button = what[1:]
+                    button = int(button)
+                    buttons[button] = int(float(value) * floor) / floor
+            print("  P1(" + str(x1) + " ; " + str(y1) + ")")
+            print("  P2(" + str(x2) + " ; " + str(y2) + ")")
+            x2_null = (math.fabs(x2) < MainHandler.DEAD_ZONE)
+            y2_null = (math.fabs(y2) < MainHandler.DEAD_ZONE)
+            mode = 4
+            if (mode != 4) and (x2_null and y2_null):
+                left = 0
+                right = 0
+            else:
+                radius = math.sqrt(math.pow(x2, 2) + math.pow(y2, 2))
+                if (1 == mode):
+                    factor = math.sqrt(math.pow(x1, 2) + math.pow(y1, 2))
+                    if (x2 > 0):
+                        right = y2
+                        left = 1 if (y2 > 0) else -1
+                        left *= radius
+                    else:
+                        left = y2
+                        right = 1 if (y2 > 0) else -1
+                        right *= radius
+                    left = factor * left
+                    right = factor * right
+                elif (2 == mode):
+                    factor = y1
+                    if (x2 > 0):
+                        if (y2 > 0):
+                            left = radius
+                            right = (1 - x2) * radius
+                        else:
+                            if (x2 > -y2):
+                                left = radius
+                                right = (y2 / x2) * radius * 2
+                            else:
+                                left = x2
+                                right = (y2 / (1 - x2)) * radius * 2
+                    else:
+                        if (y2 > 0):
+                            right = radius
+                            left = (1 - x2) * radius
+                        else:
+                            if (-x2 > -y2):
+                                right = radius
+                                left = (y2 / x2) * radius * 2
+                            else:
+                                right = x2
+                                left = (y2 / (1 - x2)) * radius * 2
+                elif (3 == mode):
+                    left = y1
+                    right = y2
+                elif (4 == mode):
+                    if (y1 < 0):
+                        left_factor = -1
+                    else:
+                        left_factor = 1
+                    if (y2 < 0):
+                        right_factor = -1
+                    else:
+                        right_factor = 1
+                    left = left_factor * buttons.get(6, 0)
+                    right = right_factor * buttons.get(7, 0)
+
+            print("left = " + str(left) + " ; right = " + str(right))
+
         pb_input = pb_controller.Input()
         pb_input.move.left = left
         pb_input.move.right = right
