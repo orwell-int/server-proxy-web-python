@@ -26,6 +26,7 @@ import sockjs.tornado
 
 import orwell.messages.controller_pb2 as pb_controller
 import orwell.messages.server_game_pb2 as pb_server_game
+import orwell.proxy.input
 
 RANDOM = random.Random()
 RANDOM.seed(42)
@@ -34,7 +35,6 @@ RANDOM.seed(42)
 class MainHandler(tornado.web.RequestHandler):
     handler = None
     JOYSTICK_PREFIX = "joystick "
-    DEAD_ZONE = 0.2
 
     def initialize(self):
         # import ipdb; ipdb.set_trace()
@@ -55,6 +55,12 @@ class MainHandler(tornado.web.RequestHandler):
         self._subscribe_stream.on_recv(self._handle_message_parts)
         self._routing_id = "temporary_id_" + str(RANDOM.randint(0, 32768))
         MainHandler.handler = self
+        self._invert_direction = 1.0
+        self._joystick = orwell.proxy.input.Joystick(0.2)
+        self._last_right = None
+        self._last_left = None
+        self._last_fire_weapon1 = None
+        self._last_fire_weapon2 = None
 
     @tornado.web.asynchronous
     def get(self):
@@ -83,6 +89,8 @@ class MainHandler(tornado.web.RequestHandler):
                 self._handle_goodbye(payload)
             elif ("GameState" == message_type):
                 self._handle_game_state(payload)
+            elif ("PlayerState" == message_type):
+                self._handle_player_state(payload)
             else:
                 print("Message ignored: " + message_type)
 
@@ -143,6 +151,43 @@ class MainHandler(tornado.web.RequestHandler):
         for connection in OrwellConnection.all_connections:
             connection.send(json.dumps({"status": status}))
 
+    def _handle_player_state(self, payload):
+        # WIP
+        message = pb_server_game.PlayerState()
+        message.ParseFromString(payload)
+        if (not message.HasField("item")):
+            return
+        with message.item as item:
+            if (orwell.messages.ItemType.FLAG == item.type):
+                capture_status = "Flag"
+            else:
+                capture_status = "Something"
+            capture_status += " " + item.name
+            has_status = False
+            on_going = False
+            failed = False
+            if (item.HasField("capture_status")):
+                if (orwell.messages.CaptureStatus.STARTED == item.capture_status):
+                    capture_status += " being captured"
+                    on_going = True
+                elif (orwell.messages.CaptureStatus.FAILED == item.capture_status):
+                    capture_status += " not being captured any longer"
+                    failed = True
+                elif (orwell.messages.CaptureStatus.SUCCEEDED == item.capture_status):
+                    capture_status += " just captured"
+                has_status = True
+            if (item.HasField("owner")):
+                if (not has_status):
+                    capture_status += " owned by " + item.owner
+                else:
+                    if (not failed and not on_going):
+                        capture_status += " by " + item.owner
+                    else:
+                        capture_status += " from " + item.owner
+        print(capture_status)
+        for connection in OrwellConnection.all_connections:
+            connection.send(json.dumps({"capture_status": capture_status}))
+
     def _build_hello(self):
         pb_message = pb_controller.Hello()
         name = "JAMBON"
@@ -175,98 +220,28 @@ class MainHandler(tornado.web.RequestHandler):
         elif (data.startswith(MainHandler.JOYSTICK_PREFIX)):
             floor = 20.0
             str_dico = data[len(MainHandler.JOYSTICK_PREFIX):]
-            print("str_dico = " + str_dico)
-            buttons = {}
-            for key_value in str_dico.split(";"):
-                what, _, value = key_value.partition("=")
-                if (what.startswith("a")):
-                    axis = what[1:]
-                    axis = int(axis)
-                    # print("\taxis = " + str(axis) + " ; value = " + str(value))
-                    if (0 == axis):
-                        x1 = int(float(value) * floor) / floor
-                    elif (1 == axis):
-                        y1 = -int(float(value) * floor) / floor
-                    elif (2 == axis):
-                        x2 = int(float(value) * floor) / floor
-                    elif (3 == axis):
-                        y2 = -int(float(value) * floor) / floor
-                elif (what.startswith("b")):
-                    button = what[1:]
-                    button = int(button)
-                    buttons[button] = int(float(value) * floor) / floor
-            print("  P1(" + str(x1) + " ; " + str(y1) + ")")
-            print("  P2(" + str(x2) + " ; " + str(y2) + ")")
-            x2_null = (math.fabs(x2) < MainHandler.DEAD_ZONE)
-            y2_null = (math.fabs(y2) < MainHandler.DEAD_ZONE)
-            mode = 4
-            if (mode != 4) and (x2_null and y2_null):
-                left = 0
-                right = 0
-            else:
-                radius = math.sqrt(math.pow(x2, 2) + math.pow(y2, 2))
-                if (1 == mode):
-                    factor = math.sqrt(math.pow(x1, 2) + math.pow(y1, 2))
-                    if (x2 > 0):
-                        right = y2
-                        left = 1 if (y2 > 0) else -1
-                        left *= radius
-                    else:
-                        left = y2
-                        right = 1 if (y2 > 0) else -1
-                        right *= radius
-                    left = factor * left
-                    right = factor * right
-                elif (2 == mode):
-                    factor = y1
-                    if (x2 > 0):
-                        if (y2 > 0):
-                            left = radius
-                            right = (1 - x2) * radius
-                        else:
-                            if (x2 > -y2):
-                                left = radius
-                                right = (y2 / x2) * radius * 2
-                            else:
-                                left = x2
-                                right = (y2 / (1 - x2)) * radius * 2
-                    else:
-                        if (y2 > 0):
-                            right = radius
-                            left = (1 - x2) * radius
-                        else:
-                            if (-x2 > -y2):
-                                right = radius
-                                left = (y2 / x2) * radius * 2
-                            else:
-                                right = x2
-                                left = (y2 / (1 - x2)) * radius * 2
-                elif (3 == mode):
-                    left = y1
-                    right = y2
-                elif (4 == mode):
-                    if (y1 < 0):
-                        left_factor = -1
-                    else:
-                        left_factor = 1
-                    if (y2 < 0):
-                        right_factor = -1
-                    else:
-                        right_factor = 1
-                    left = left_factor * buttons.get(6, 0)
-                    right = right_factor * buttons.get(7, 0)
+            self._joystick.process(str_dico)
+            left = self._joystick.left
+            right = self._joystick.right
+            fire_weapon1 = self._joystick.fire_weapon1
+            fire_weapon2 = self._joystick.fire_weapon2
 
-            print("left = " + str(left) + " ; right = " + str(right))
-
-        pb_input = pb_controller.Input()
-        pb_input.move.left = left
-        pb_input.move.right = right
-        pb_input.fire.weapon1 = fire_weapon1
-        pb_input.fire.weapon2 = fire_weapon2
-        payload = pb_input.SerializeToString()
-        message = self._routing_id + ' Input ' + payload
-        # self._subscribe_stream.send(hello)
-        self._push_stream.send(message)
+        if (self._last_right != right) or (self._last_left != left) or \
+                (self._last_fire_weapon1 != fire_weapon1) or \
+                (self._last_fire_weapon2):
+            self._last_right = right
+            self._last_left = left
+            self._last_fire_weapon1 = fire_weapon1
+            self._last_fire_weapon2 = fire_weapon2
+            pb_input = pb_controller.Input()
+            pb_input.move.left = left
+            pb_input.move.right = right
+            pb_input.fire.weapon1 = fire_weapon1
+            pb_input.fire.weapon2 = fire_weapon2
+            payload = pb_input.SerializeToString()
+            message = self._routing_id + ' Input ' + payload
+            # self._subscribe_stream.send(hello)
+            self._push_stream.send(message)
 
 
 class VideoHandler(tornado.web.RequestHandler):
