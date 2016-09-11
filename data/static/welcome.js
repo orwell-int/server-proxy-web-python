@@ -1,4 +1,5 @@
-var gLastEvent = ""
+var gLastEvent = {}
+gLastEvent["KEYBOARD"] = ""
 var gConn = null;
 
 $( document ).ready(
@@ -70,12 +71,12 @@ $( document ).ready(
 				}
 				if ("" != newEvent)
 				{
-					if (newEvent != gLastEvent)
+					if (newEvent != gLastEvent["KEYBOARD"])
 					{
 						$("#textField").html(newEvent);
 						//console.log(newEvent)
 						callServer(newEvent)
-						gLastEvent = newEvent
+						gLastEvent["KEYBOARD"] = newEvent
 					}
 				}
 			}
@@ -83,11 +84,11 @@ $( document ).ready(
 		$( document ).keyup(
 			function(event)
 			{
-				if ("STOP" != gLastEvent)
+				if ("STOP" != gLastEvent["KEYBOARD"])
 				{
 					//console.log("STOP")
 					callServer("STOP")
-					gLastEvent = "STOP"
+					gLastEvent["KEYBOARD"] = "STOP"
 				}
 			}
 		);
@@ -120,6 +121,9 @@ function addgamepad(gamepad) {
 	var t = document.createElement("h1");
 	t.appendChild(document.createTextNode("gamepad: " + gamepad.id));
 	d.appendChild(t);
+
+	gLastEvent[gamepad.index] = ""
+	callServer("new_joystick" + gamepad.index + " " + gamepad.id)
 
 	var b = document.createElement("div");
 	b.className = "buttons";
@@ -223,12 +227,12 @@ function updateStatus() {
 		}
 		if ("" != newEvent)
 		{
-			newEvent = "joystick " + newEvent
-			if (newEvent != gLastEvent)
+			newEvent = "joystick" + j + " " + newEvent
+			if (newEvent != gLastEvent[j])
 			{
 				$("#textField").html(newEvent);
 				callServer(newEvent);
-				gLastEvent = newEvent;
+				gLastEvent[j] = newEvent;
 			}
 		}
 	}

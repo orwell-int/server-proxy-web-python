@@ -9,7 +9,6 @@ import socket
 import struct
 import random
 import json
-import math
 
 import zmq
 from zmq.eventloop import ioloop
@@ -34,7 +33,8 @@ RANDOM.seed(42)
 
 class MainHandler(tornado.web.RequestHandler):
     handler = None
-    JOYSTICK_PREFIX = "joystick "
+    JOYSTICK_PREFIX = "joystick"
+    JOYSTICK_CREATE = "new_joystick"
 
     def initialize(self):
         # import ipdb; ipdb.set_trace()
@@ -56,7 +56,7 @@ class MainHandler(tornado.web.RequestHandler):
         self._routing_id = "temporary_id_" + str(RANDOM.randint(0, 32768))
         MainHandler.handler = self
         self._invert_direction = 1.0
-        self._joystick = orwell.proxy.input.Joystick(0.2)
+        self._joysticks = {}
         self._last_right = None
         self._last_left = None
         self._last_fire_weapon1 = None
@@ -89,8 +89,8 @@ class MainHandler(tornado.web.RequestHandler):
                 self._handle_goodbye(payload)
             elif ("GameState" == message_type):
                 self._handle_game_state(payload)
-            elif ("PlayerState" == message_type):
-                self._handle_player_state(payload)
+            # elif ("PlayerState" == message_type):
+                # self._handle_player_state(payload)
             else:
                 print("Message ignored: " + message_type)
 
@@ -217,14 +217,22 @@ class MainHandler(tornado.web.RequestHandler):
             fire_weapon1 = True
         elif ("FIRE2" == data):
             fire_weapon2 = True
+        elif (data.startswith(MainHandler.JOYSTICK_CREATE)):
+            info = data[len(MainHandler.JOYSTICK_CREATE):]
+            index, _, joystick_type = info.partition(' ')
+            index = int(index)
+            self._joysticks[index] = orwell.proxy.input.Joystick(
+                0.2,
+                joystick_type)
         elif (data.startswith(MainHandler.JOYSTICK_PREFIX)):
-            floor = 20.0
-            str_dico = data[len(MainHandler.JOYSTICK_PREFIX):]
-            self._joystick.process(str_dico)
-            left = self._joystick.left
-            right = self._joystick.right
-            fire_weapon1 = self._joystick.fire_weapon1
-            fire_weapon2 = self._joystick.fire_weapon2
+            info = data[len(MainHandler.JOYSTICK_PREFIX):]
+            index, _, str_dico = info.partition(' ')
+            index = int(index)
+            self._joysticks[index].process(str_dico)
+            left = self._joysticks[index].left
+            right = self._joysticks[index].right
+            fire_weapon1 = self._joysticks[index].fire_weapon1
+            fire_weapon2 = self._joysticks[index].fire_weapon2
 
         if (self._last_right != right) or (self._last_left != left) or \
                 (self._last_fire_weapon1 != fire_weapon1) or \
