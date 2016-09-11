@@ -89,8 +89,6 @@ class MainHandler(tornado.web.RequestHandler):
                 self._handle_goodbye(payload)
             elif ("GameState" == message_type):
                 self._handle_game_state(payload)
-            # elif ("PlayerState" == message_type):
-                # self._handle_player_state(payload)
             else:
                 print("Message ignored: " + message_type)
 
@@ -150,43 +148,6 @@ class MainHandler(tornado.web.RequestHandler):
         print(status)
         for connection in OrwellConnection.all_connections:
             connection.send(json.dumps({"status": status}))
-
-    def _handle_player_state(self, payload):
-        # WIP
-        message = pb_server_game.PlayerState()
-        message.ParseFromString(payload)
-        if (not message.HasField("item")):
-            return
-        with message.item as item:
-            if (orwell.messages.ItemType.FLAG == item.type):
-                capture_status = "Flag"
-            else:
-                capture_status = "Something"
-            capture_status += " " + item.name
-            has_status = False
-            on_going = False
-            failed = False
-            if (item.HasField("capture_status")):
-                if (orwell.messages.CaptureStatus.STARTED == item.capture_status):
-                    capture_status += " being captured"
-                    on_going = True
-                elif (orwell.messages.CaptureStatus.FAILED == item.capture_status):
-                    capture_status += " not being captured any longer"
-                    failed = True
-                elif (orwell.messages.CaptureStatus.SUCCEEDED == item.capture_status):
-                    capture_status += " just captured"
-                has_status = True
-            if (item.HasField("owner")):
-                if (not has_status):
-                    capture_status += " owned by " + item.owner
-                else:
-                    if (not failed and not on_going):
-                        capture_status += " by " + item.owner
-                    else:
-                        capture_status += " from " + item.owner
-        print(capture_status)
-        for connection in OrwellConnection.all_connections:
-            connection.send(json.dumps({"capture_status": capture_status}))
 
     def _build_hello(self):
         pb_message = pb_controller.Hello()
