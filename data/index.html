@@ -1,25 +1,44 @@
 <html>
-    <head>
-        <link rel="icon" href="favicon.ico" size="16x16">
+	<head>
+		<link rel="icon" href="favicon.ico" size="16x16">
 		<script src="static/jquery.min.js"></script>
 		<script src="static/sockjs.min.js"></script>
 		<script src="static/welcome.js"></script>
 		<script>
-
-</script>
-    </head>
-    <body>
-        <h1><a href="http://fr.wikipedia.org/wiki/1984_(roman)">ORWELL</a> Project</h1>
-        <h2>Of Robots We Expect Lots of Laughs</h2>
-        <br/>
-        <div>
+		</script>
+		<style>
+.buttons, .axes {
+	padding: 1em;
+}
+.button {
+	padding: 1em;
+	border-radius: 20px;
+	border: 1px solid black;
+	background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAAAXNSR0IArs4c6QAAAAxJREFUCNdjYPjPAAACAgEAqiqeJwAAAABJRU5ErkJggg==);
+	background-size: 0% 0%;
+	background-position: 50% 50%;
+	background-repeat: no-repeat;
+}
+.pressed {
+	border: 1px solid red;
+}
+		</style>
+	</head>
+	<body>
+		<h1><a href="http://fr.wikipedia.org/wiki/1984_(roman)">ORWELL</a> Project</h1>
+		<h2>Of Robots We Expect Lots of Laughs</h2>
+		<br/>
+		<div>
 			<image id="videofeed" src="{{ videofeed }}" alt: "Local"/>
-        </div>
-        <br/>
-        <p>
+		</div>
+		<br/>
+		<p>
 		<div id="status">{{ status }}</div>
-        </p>
-        <p id="textField">Press an arrow key to test me</p>
-        <div/>
-    </body>
+		</p>
+		<p id="textField">Press an arrow key to test me</p>
+		<div/>
+			<div>
+				<h2 id="start">Press a button on your controller to start</h2>
+			</div>
+	</body>
 </html>

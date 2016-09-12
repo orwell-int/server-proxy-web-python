@@ -21,7 +21,7 @@ setuptools.setup(
     author_email='',
     packages=setuptools.find_packages(exclude="test"),
     test_suite='nose.collector',
-    install_requires=['pyzmq', 'protobuf'],
+    install_requires=['pyzmq', 'protobuf', 'tornado', 'enum34'],
     tests_require=['nose', 'coverage', 'mock'],
     entry_points={
         'console_scripts': [
@@ -35,5 +35,5 @@ setuptools.setup(
         'Operating System :: POSIX :: Linux',
         'Topic :: Utilities',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 3.4'],
+        'Programming Language :: Python :: 2.7'],
 )

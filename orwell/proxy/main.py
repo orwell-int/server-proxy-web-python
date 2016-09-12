@@ -25,6 +25,7 @@ import sockjs.tornado
 
 import orwell.messages.controller_pb2 as pb_controller
 import orwell.messages.server_game_pb2 as pb_server_game
+import orwell.proxy.input
 
 RANDOM = random.Random()
 RANDOM.seed(42)
@@ -32,6 +33,8 @@ RANDOM.seed(42)
 
 class MainHandler(tornado.web.RequestHandler):
     handler = None
+    JOYSTICK_PREFIX = "joystick"
+    JOYSTICK_CREATE = "new_joystick"
 
     def initialize(self):
         # import ipdb; ipdb.set_trace()
@@ -52,6 +55,12 @@ class MainHandler(tornado.web.RequestHandler):
         self._subscribe_stream.on_recv(self._handle_message_parts)
         self._routing_id = "temporary_id_" + str(RANDOM.randint(0, 32768))
         MainHandler.handler = self
+        self._invert_direction = 1.0
+        self._joysticks = {}
+        self._last_right = None
+        self._last_left = None
+        self._last_fire_weapon1 = None
+        self._last_fire_weapon2 = None
 
     @tornado.web.asynchronous
     def get(self):
@@ -169,15 +178,39 @@ class MainHandler(tornado.web.RequestHandler):
             fire_weapon1 = True
         elif ("FIRE2" == data):
             fire_weapon2 = True
-        pb_input = pb_controller.Input()
-        pb_input.move.left = left
-        pb_input.move.right = right
-        pb_input.fire.weapon1 = fire_weapon1
-        pb_input.fire.weapon2 = fire_weapon2
-        payload = pb_input.SerializeToString()
-        message = self._routing_id + ' Input ' + payload
-        # self._subscribe_stream.send(hello)
-        self._push_stream.send(message)
+        elif (data.startswith(MainHandler.JOYSTICK_CREATE)):
+            info = data[len(MainHandler.JOYSTICK_CREATE):]
+            index, _, joystick_type = info.partition(' ')
+            index = int(index)
+            self._joysticks[index] = orwell.proxy.input.Joystick(
+                0.2,
+                joystick_type)
+        elif (data.startswith(MainHandler.JOYSTICK_PREFIX)):
+            info = data[len(MainHandler.JOYSTICK_PREFIX):]
+            index, _, str_dico = info.partition(' ')
+            index = int(index)
+            self._joysticks[index].process(str_dico)
+            left = self._joysticks[index].left
+            right = self._joysticks[index].right
+            fire_weapon1 = self._joysticks[index].fire_weapon1
+            fire_weapon2 = self._joysticks[index].fire_weapon2
+
+        if (self._last_right != right) or (self._last_left != left) or \
+                (self._last_fire_weapon1 != fire_weapon1) or \
+                (self._last_fire_weapon2):
+            self._last_right = right
+            self._last_left = left
+            self._last_fire_weapon1 = fire_weapon1
+            self._last_fire_weapon2 = fire_weapon2
+            pb_input = pb_controller.Input()
+            pb_input.move.left = left
+            pb_input.move.right = right
+            pb_input.fire.weapon1 = fire_weapon1
+            pb_input.fire.weapon2 = fire_weapon2
+            payload = pb_input.SerializeToString()
+            message = self._routing_id + ' Input ' + payload
+            # self._subscribe_stream.send(hello)
+            self._push_stream.send(message)
 
 
 class VideoHandler(tornado.web.RequestHandler):
