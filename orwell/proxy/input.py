@@ -11,10 +11,10 @@ class JoystickType(Enum):
 
     @staticmethod
     def build(str_value):
-        if (str_value.endswith(XINPUT)):
+        if (XINPUT in str_value):
             return JoystickType.xinput
         else:
-            assert(str_value.endswith(T_FLIGHT_HOTAS_X))
+            assert(T_FLIGHT_HOTAS_X in str_value)
             return JoystickType.t_flight_hots_x
 
 

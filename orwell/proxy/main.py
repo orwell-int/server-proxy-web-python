@@ -26,6 +26,7 @@ import sockjs.tornado
 import orwell.messages.controller_pb2 as pb_controller
 import orwell.messages.server_game_pb2 as pb_server_game
 import orwell.proxy.input
+import orwell.proxy.item
 
 RANDOM = random.Random()
 RANDOM.seed(42)
@@ -66,7 +67,8 @@ class MainHandler(tornado.web.RequestHandler):
     def get(self):
         content = self._loader.load("index.html").generate(
                 videofeed="/test",
-                status="well let's say pending")
+                status="well let's say pending",
+                capture_status="")
         self.write(content)
         hello = self._build_hello()
         print("Send Hello: " + repr(hello))
@@ -89,6 +91,8 @@ class MainHandler(tornado.web.RequestHandler):
                 self._handle_goodbye(payload)
             elif ("GameState" == message_type):
                 self._handle_game_state(payload)
+            elif ("PlayerState" == message_type):
+                self._handle_player_state(payload)
             else:
                 print("Message ignored: " + message_type)
 
@@ -146,8 +150,24 @@ class MainHandler(tornado.web.RequestHandler):
             else:
                 status = "Game NOT running"
         print(status)
+        for item in message.items:
+            item_wrapper = orwell.proxy.item.Item(item)
+            if (item_wrapper.capture_status):
+                pass
         for connection in OrwellConnection.all_connections:
             connection.send(json.dumps({"status": status}))
+
+    def _handle_player_state(self, payload):
+        # WIP
+        message = pb_server_game.PlayerState()
+        message.ParseFromString(payload)
+        if (not message.HasField("item")):
+            return
+        with message.item as item:
+            capture_status = orwell.proxy.item.Item(item).capture_status
+        print(capture_status)
+        for connection in OrwellConnection.all_connections:
+            connection.send(json.dumps({"capture_status": capture_status}))
 
     def _build_hello(self):
         pb_message = pb_controller.Hello()
@@ -349,16 +369,27 @@ def make_app():
         static_path=static_path)
 
 
+def get_network_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+    s.connect(('<broadcast>', 0))
+    return s.getsockname()[0]
+
+
 class Broadcast(object):
     def __init__(self, port=9080, retries=5, timeout=10):
         self._size = 512
         self._retries = retries
-        self._group = ('225.0.0.42', port)
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         self._socket.settimeout(timeout)
         ttl = struct.pack('b', 1)
         self._socket.setsockopt(
             socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, ttl)
+        broadcast = get_network_ip().split('.')
+        broadcast = '.'.join(broadcast[:-1]) + '.255'
+        self._group = (broadcast, port)
+        print('group = ' + str(self._group))
         self._received = False
         self._data = None
         self._sender = None
@@ -375,8 +406,10 @@ class Broadcast(object):
 
     def send_one_broadcast_message(self):
         try:
+            print("before sendto")
             sent = self._socket.sendto(
                     "<broadcast>".encode("ascii"), self._group)
+            print("after sendto ; " + repr(sent))
             while not self._received:
                 try:
                     self._data, self._sender = self._socket.recvfrom(

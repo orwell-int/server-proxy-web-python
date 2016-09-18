@@ -15,6 +15,9 @@ $( document ).ready(
 		gConn.onmessage = function(e) {
 			console.log('Received: ' + e.data);
 			obj = JSON.parse(e.data);
+			if ("capture_status" in obj) {
+				document.getElementById("capture_status").innerHTML = obj.capture_status;
+			}
 			if ("status" in obj) {
 				document.getElementById("status").innerHTML = obj.status;
 			}
