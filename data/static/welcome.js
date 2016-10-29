@@ -13,8 +13,35 @@ $( document ).ready(
 			console.log('Connected.');
 		};
 		gConn.onmessage = function(e) {
-			console.log('Received: ' + e.data);
 			obj = JSON.parse(e.data);
+			if ("new_items" in obj) {
+				console.log('Received: ' + e.data);
+				var list = document.getElementById("items");
+				for (var i = 0; i < obj.new_items.length; i++) {
+					name = obj.new_items[i];
+					identifier = "item " + name;
+					if (null == document.getElementById(identifier) ) {
+						console.log('add item with name "' + name + '"');
+						var entry = document.createElement('li');
+						entry.appendChild(document.createTextNode(name));
+						entry.id = identifier;
+						list.appendChild(entry);
+					}
+				}
+			}
+			if ("items" in obj) {
+				var list = document.getElementById("items");
+				for (var i = 0; i < obj.items.length; i++) {
+					item = obj.items[i];
+					identifier = "item " + item.name;
+					node_item = document.getElementById(identifier);
+					if (null == node_item) {
+						console.log("Error for item number " + i + " with id '" + identifier + "'.");
+					} else {
+						node_item.innerHTML = item.status
+					}
+				}
+			}
 			if ("capture_status" in obj) {
 				document.getElementById("capture_status").innerHTML = obj.capture_status;
 			}

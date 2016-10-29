@@ -62,6 +62,7 @@ class MainHandler(tornado.web.RequestHandler):
         self._last_left = None
         self._last_fire_weapon1 = None
         self._last_fire_weapon2 = None
+        self._items = set()
 
     @tornado.web.asynchronous
     def get(self):
@@ -138,24 +139,44 @@ class MainHandler(tornado.web.RequestHandler):
         self.finish()
 
     def _handle_game_state(self, payload):
-        message = pb_server_game.GameState()
-        message.ParseFromString(payload)
-        if (message.HasField("winner")):
-            status = "Game won by team " + message.winner
-        else:
-            if (message.playing):
-                status = "Game running"
-                if (message.HasField("seconds")):
-                    status += " ({} second(s) left)".format(message.seconds)
+        if (OrwellConnection.all_connections):
+            print ("_handle_game_state")
+            message = pb_server_game.GameState()
+            message.ParseFromString(payload)
+            if (message.HasField("winner")):
+                status = "Game won by team " + message.winner
             else:
-                status = "Game NOT running"
-        print(status)
-        for item in message.items:
-            item_wrapper = orwell.proxy.item.Item(item)
-            if (item_wrapper.capture_status):
-                pass
-        for connection in OrwellConnection.all_connections:
-            connection.send(json.dumps({"status": status}))
+                if (message.playing):
+                    status = "Game running"
+                    if (message.HasField("seconds")):
+                        status += " ({} second(s) left)".format(
+                            message.seconds)
+                else:
+                    status = "Game NOT running"
+            print(status)
+            new_items = []
+            items = []
+            for item in message.items:
+                item_wrapper = orwell.proxy.item.Item(item)
+                if (item_wrapper.name in self._items):
+                    items.append(
+                        {"name": item_wrapper.name,
+                         "status": item_wrapper.short_status})
+                else:
+                    self._items.add(item_wrapper.name)
+                    new_items.append(item_wrapper.name)
+            dico = {"status": status}
+            if (new_items):
+                print("new_items = " + str(new_items))
+                dico["new_items"] = new_items
+            if (items):
+                dico["items"] = items
+            sent = False
+            for connection in OrwellConnection.all_connections:
+                connection.send(json.dumps(dico))
+                sent = True
+            if (not sent):
+                print("message not sent")
 
     def _handle_player_state(self, payload):
         # WIP
@@ -163,8 +184,8 @@ class MainHandler(tornado.web.RequestHandler):
         message.ParseFromString(payload)
         if (not message.HasField("item")):
             return
-        with message.item as item:
-            capture_status = orwell.proxy.item.Item(item).capture_status
+        item = message.item
+        capture_status = orwell.proxy.item.Item(item).capture_status
         print(capture_status)
         for connection in OrwellConnection.all_connections:
             connection.send(json.dumps({"capture_status": capture_status}))
