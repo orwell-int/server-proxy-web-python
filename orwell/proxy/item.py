@@ -19,9 +19,9 @@ class Item(object):
     def short_status(self):
         if (self._short_status is None):
             self._short_status = self._get_short_status()
-        print(
-            "Item(" + self.name + ")::short_status = " +
-            self._short_status)
+        # print(
+            # "Item(" + self.name + ")::short_status = " +
+            # self._short_status)
         return self._short_status
 
     def _get_short_status(self):

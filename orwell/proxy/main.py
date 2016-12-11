@@ -140,7 +140,7 @@ class MainHandler(tornado.web.RequestHandler):
 
     def _handle_game_state(self, payload):
         if (OrwellConnection.all_connections):
-            print ("_handle_game_state")
+            # print ("_handle_game_state")
             message = pb_server_game.GameState()
             message.ParseFromString(payload)
             if (message.HasField("winner")):
@@ -153,7 +153,7 @@ class MainHandler(tornado.web.RequestHandler):
                             message.seconds)
                 else:
                     status = "Game NOT running"
-            print(status)
+            # print(status)
             new_items = []
             items = []
             for item in message.items:
@@ -238,7 +238,7 @@ class MainHandler(tornado.web.RequestHandler):
 
         if (self._last_right != right) or (self._last_left != left) or \
                 (self._last_fire_weapon1 != fire_weapon1) or \
-                (self._last_fire_weapon2):
+                (self._last_fire_weapon2 != fire_weapon2):
             self._last_right = right
             self._last_left = left
             self._last_fire_weapon1 = fire_weapon1
