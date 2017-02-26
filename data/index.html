@@ -4,46 +4,79 @@
 		<script src="static/jquery.min.js"></script>
 		<script src="static/sockjs.min.js"></script>
 		<script src="static/welcome.js"></script>
+		<script src="static/screenfull.min.js"></script>
+		<script src="static/bootstrap-3.3.7-dist/js/bootstrap.min.js"></script>
+		<link rel="stylesheet" type="text/css" href="static/bootstrap-3.3.7-dist/css/bootstrap.min.css"/>
 		<script>
 		</script>
+		<!--<style>-->
+<!--.buttons, .axes {-->
+	<!--padding: 1em;-->
+	<!--}-->
+	<!--.button {-->
+		<!--padding: 1em;-->
+		<!--border-radius: 20px;-->
+		<!--border: 1px solid black;-->
+		<!--background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAAAXNSR0IArs4c6QAAAAxJREFUCNdjYPjPAAACAgEAqiqeJwAAAABJRU5ErkJggg==);-->
+		<!--background-size: 0% 0%;-->
+		<!--background-position: 50% 50%;-->
+		<!--background-repeat: no-repeat;-->
+		<!--}-->
+		<!--.pressed {-->
+			<!--border: 1px solid red;-->
+			<!--}-->
+			<!--</style>-->
 		<style>
-.buttons, .axes {
-	padding: 1em;
+.test_button { position: absolute; right: 5px; top: 5px; }
+.classic_button_next{ position: absolute; right: 5px; top: 5px; }
+.classic_button_prev { position: absolute; right: 88px; top: 5px; }
+.centered {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
 }
-.button {
-	padding: 1em;
-	border-radius: 20px;
-	border: 1px solid black;
-	background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAAAXNSR0IArs4c6QAAAAxJREFUCNdjYPjPAAACAgEAqiqeJwAAAABJRU5ErkJggg==);
-	background-size: 0% 0%;
-	background-position: 50% 50%;
-	background-repeat: no-repeat;
-}
-.pressed {
-	border: 1px solid red;
+.bottom_left {
+	position: absolute;
+	top: 100%;
+	left: 0%;
+	transform: translate(0%, -100%);
+	margin-left: 5;
+	margin-bottom: 5;
 }
 		</style>
 	</head>
 	<body>
-		<h1><a href="http://fr.wikipedia.org/wiki/1984_(roman)">ORWELL</a> Project</h1>
-		<h2>Of Robots We Expect Lots of Laughs</h2>
-		<br/>
-		<div>
-			<image id="videofeed" src="{{ videofeed }}" alt: "Local"/>
+		<div id="tittle">
+			<h1><a href="http://fr.wikipedia.org/wiki/1984_(roman)">ORWELL</a> Project</h1>
+			<h2>Of Robots We Expect Lots of Laughs</h2>
+			<br/>
 		</div>
-		<div>
-			<ol id="items"/>
-		</div>
-		<br/>
-		<p>
-		<div id="status">{{ status }}</div>
-		<div id="capture_status">{{ capture_status }}</div>
-		<button id="start_button" onclick="start()" type="button">Start</button>
-		</p>
-		<p id="textField">Press an arrow key to test me</p>
-		<div/>
-			<div>
-				<h2 id="start">Press a button on your controller to start</h2>
+		<div style="position:relative" width="100%">
+			<!-- switch to full width: relative ; switch to image width: absolute -->
+			<!--<div style="position:absolute">-->
+			<div style="position:relative" id="img_container">
+				<image id="videofeed" src="{{ videofeed }}" alt: "Local"  width="100%" style="margin-left:0px;height:auto;"/>
+				<!--<image id="videofeed" src="{{ videofeed }}" alt: "Local"  height="100%" style="margin-left:0px;width:auto;"/>-->
+				<input type="button" class="test_button" id="fullscren" value="full screen" onclick="fullscreen()"/>
+				<button id="start_button" onclick="start()" type="button" class="btn btn-primary centered">Start</button>
+				<!--<div style="position:absolute;top:100%;left:0%">-->
+				<!--<div id="hud" style="visibility:hidden">-->
+				<div id="hud" class="bottom_left">
+					<div>
+						<ol id="items"/>
+					</div>
+					<br/>
+					<p>
+					<div id="status">{{ status }}</div>
+					<div id="capture_status">{{ capture_status }}</div>
+				</div>
 			</div>
+		</div>
+			<!--</p>-->
+			<!--<p id="textField">Press an arrow key to test me</p>-->
+				<!--<div>-->
+					<!--<h2 id="start">Press a button on your controller to start</h2>-->
+				<!--</div>-->
 	</body>
 </html>

@@ -2,6 +2,7 @@
 from __future__ import print_function
 
 
+import argparse
 import logging
 import sys
 import os
@@ -30,6 +31,22 @@ import orwell.proxy.item
 
 RANDOM = random.Random()
 RANDOM.seed(42)
+
+
+class StaticMainHandler(tornado.web.RequestHandler):
+
+    def initialize(self):
+        # import ipdb; ipdb.set_trace()
+        print(os.getcwd())
+        self._loader = tornado.template.Loader("data")
+
+    # @tornado.web.asynchronous
+    def get(self):
+        content = self._loader.load("index.html").generate(
+                videofeed="static/fake_image.png",
+                status="well let's say pending",
+                capture_status="")
+        self.write(content)
 
 
 class MainHandler(tornado.web.RequestHandler):
@@ -406,11 +423,16 @@ class OrwellConnection(sockjs.tornado.SockJSConnection):
         OrwellConnection.all_connections.remove(self)
 
 
-def make_app():
+def make_app(disable_dynamic):
     router = sockjs.tornado.SockJSRouter(OrwellConnection, '/orwell')
     static_path = os.path.join(os.getcwd(), 'data', 'static')
+    if (disable_dynamic):
+        main_handler = StaticMainHandler
+    else:
+        main_handler = MainHandler
+    # MainHandler.set_disable_dynamic(disable_dynamic)
     return tornado.web.Application(
-        [(r"/", MainHandler),
+        [(r"/", main_handler),
          (r'/static/', tornado.web.StaticFileHandler),
          (r'/video', VideoHandler),
          (r'/test', TestHandler),
@@ -518,7 +540,15 @@ class Broadcast(object):
 
 def main(argv=sys.argv[1:]):
     """Entry point for the tests and program."""
-    app = make_app()
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--disable-dynamic",
+        help="Debug option to disable the video and the broadcast to have a "
+        "conveniently static page, easier to debug.",
+        default=False,
+        action='store_true')
+    arguments = parser.parse_args()
+    app = make_app(arguments.disable_dynamic)
     app.listen(5000)
     # tornado.ioloop.IOLoop.current().start()
     try:

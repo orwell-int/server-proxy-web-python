@@ -18,3 +18,6 @@ clean: env/bin/activate
 
 start: env/bin/activate
 	. env/bin/activate && python orwell/proxy/main.py
+
+start_static: env/bin/activate
+	. env/bin/activate && python orwell/proxy/main.py --disable-dynamic
