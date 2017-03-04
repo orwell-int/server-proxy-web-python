@@ -85,7 +85,7 @@ class MainHandler(tornado.web.RequestHandler):
     @tornado.web.asynchronous
     def get(self):
         content = self._loader.load("index.html").generate(
-                videofeed="/test",
+                videofeed="static/fake_image.png",
                 status="well let's say pending",
                 capture_status="")
         self.write(content)

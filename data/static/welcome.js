@@ -53,7 +53,14 @@ $( document ).ready(
 				document.getElementById("videofeed").setAttribute("src", obj.videofeed);
 			}
 			if ("start_button" in obj) {
-				document.getElementById("start_button").innerHTML = obj.start_button;
+				var start_button = document.getElementById("start_button");
+				start_button.innerHTML = obj.start_button;
+				if ("Restart" == obj.start_button) {
+					var height = start_button.getBoundingClientRect().height
+					start_button.style.top = 5 + height / 2;
+				} else {
+					start_button.style.top = '50%';
+				}
 			}
 		};
 		gConn.onclose = function() {
@@ -302,32 +309,6 @@ function fullscreen() {
 		}
 		gFullScreen = !gFullScreen;
 	}
-}
-
-function getPosition(el) {
-  var xPos = 0;
-  var yPos = 0;
-
-  while (el) {
-    if (el.tagName == "BODY") {
-      // deal with browser quirks with body/window/document and page scroll
-      var xScroll = el.scrollLeft || document.documentElement.scrollLeft;
-      var yScroll = el.scrollTop || document.documentElement.scrollTop;
-
-      xPos += (el.offsetLeft - xScroll + el.clientLeft);
-      yPos += (el.offsetTop - yScroll + el.clientTop);
-    } else {
-      // for all other non-BODY elements
-      xPos += (el.offsetLeft - el.scrollLeft + el.clientLeft);
-      yPos += (el.offsetTop - el.scrollTop + el.clientTop);
-    }
-
-    el = el.offsetParent;
-  }
-  return {
-    x: xPos,
-    y: yPos
-  };
 }
 
 window.addEventListener("gamepadconnected", connecthandler);
