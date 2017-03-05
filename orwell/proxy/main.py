@@ -182,7 +182,9 @@ class MainHandler(tornado.web.RequestHandler):
                 if (item_wrapper.name in self._items):
                     items.append(
                         {"name": item_wrapper.name,
-                         "status": item_wrapper.short_status})
+                         "status": item_wrapper.short_status,
+                         "capture": item_wrapper.capture,
+                         "owner": item_wrapper.owner})
                 else:
                     self._items.add(item_wrapper.name)
                     new_items.append(item_wrapper.name)

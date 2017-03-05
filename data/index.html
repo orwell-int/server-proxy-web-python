@@ -1,6 +1,7 @@
 <html>
 	<head>
 		<link rel="icon" href="favicon.ico" size="16x16">
+		<link href="https://fonts.googleapis.com/css?family=Comfortaa|Concert+One|Fredoka+One|Montserrat|Offside|Orbitron|Righteous|Varela+Round" rel="stylesheet">
 		<script src="static/jquery.min.js"></script>
 		<script src="static/sockjs.min.js"></script>
 		<script src="static/welcome.js"></script>
@@ -17,13 +18,113 @@
 	left: 50%;
 	transform: translate(-50%, -50%);
 }
+.centered2 {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-100%, -100%);
+}
+.top_middle {
+	position:absolute;
+    top:0;
+    left: 50%;
+	transform: translate(-50%, 0%);
+	margin-top: 5px;
+}
+.bottom_right {
+	position:absolute;
+    bottom:0;
+    right:0;
+	margin-right: 10px;
+	margin-bottom: 5px;
+	display: inline-block;
+	white-space: nowrap;
+}
 .bottom_left {
 	position: absolute;
 	top: 100%;
 	left: 0%;
 	transform: translate(0%, -100%);
-	margin-left: 5;
-	margin-bottom: 5;
+	margin-left: 5px;
+	margin-bottom: 5px;
+}
+.inner_circle {
+    width: 20px;
+    height: 20px;
+	border-radius: 50%;
+	z-index: 1;
+}
+.circle {
+    width: 60px;
+	height: 60px;
+	border-radius: 50%;
+	z-index: 0;
+	position: relative;
+	margin-top: 5px;
+	margin-right: 5px;
+	margin-left: 5px;
+	margin-bottom: 5px;
+}
+.red {
+	background: red;
+}
+.green {
+	background: green;
+}
+.blue {
+	background: blue;
+}
+.yellow {
+	background: yellow;
+}
+.purple {
+	background: purple;
+}
+.teal {
+	background: teal;
+}
+.white {
+	background: white;
+}
+.blink {
+	animation: blink-animation 0.3s steps(4, start) infinite alternate;
+	-webkit-animation: blink-animation 0.3s steps(4, start) infinite alternate;
+}
+@keyframes blink-animation {
+	to {
+		opacity: 0;
+	}
+	from {
+		opacity: 1;
+	}
+}
+@-webkit-keyframes blink-animation {
+	to {
+		opacity: 0;
+	}
+	from {
+		opacity: 1;
+	}
+}
+.team_name {
+	<!--position: relative;-->
+	color:black;
+	font-size: 250%;
+	z-index: 1;
+	font-family: 'Montserrat', sans-serif;
+}
+.flag_name {
+	color:black;
+	font-size: 250%;
+	z-index: 1;
+	font-family: 'Montserrat', sans-serif;
+}
+.border {
+	-webkit-text-stroke-width: 4px;
+	-webkit-text-stroke-color: white;
+}
+.horizontal {
+	float: left
 }
 		</style>
 	</head>
@@ -40,15 +141,18 @@
 				<image id="videofeed" src="{{ videofeed }}" alt: "Local"  width="100%" style="margin-left:0px;height:auto;"/>
 				<!--<image id="videofeed" src="{{ videofeed }}" alt: "Local"  height="100%" style="margin-left:0px;width:auto;"/>-->
 				<input type="button" class="test_button" id="fullscren" value="full screen" onclick="fullscreen()"/>
+				<div id="flags" class="top_middle">
+					<!--<div class="green circle horizontal"><div><div class="centered flag_name border">A</div><div class="centered flag_name">A</div></div></div>-->
+					<!--<div class="purple circle horizontal"><div><div class="centered flag_name border">B</div><div class="centered flag_name">B</div></div></div>-->
+					<!--<div class="blue circle horizontal"><div><div class="centered flag_name border">C</div><div class="centered flag_name">C</div></div></div>-->
+					<!--<div class="yellow circle horizontal" onclick="addFlag()"><div><div class="centered flag_name border">D</div><div class="centered flag_name">D</div></div></div>-->
+				</div>
 				<button id="start_button" onclick="start()" type="button" class="btn btn-primary centered">Start</button>
-				<!--<div style="position:absolute;top:100%;left:0%">-->
-				<!--<div id="hud" style="visibility:hidden">-->
+				<div class="bottom_right"><div class="team_name border centered2">Team: A</div><div class="team_name centered2">Team: A</div></div>
 				<div id="hud" class="bottom_left">
 					<div>
 						<ol id="items"/>
 					</div>
-					<br/>
-					<p>
 					<div id="status">{{ status }}</div>
 					<div id="capture_status">{{ capture_status }}</div>
 				</div>

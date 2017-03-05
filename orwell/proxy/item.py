@@ -16,6 +16,26 @@ class Item(object):
         return self._pb_item.type
 
     @property
+    def owner(self):
+        if (self._pb_item.HasField("owner")):
+            return self._pb_item.owner
+        else:
+            return ""
+
+    @property
+    def capture(self):
+        item = self._pb_item
+        capture = ""
+        if (item.HasField("capture_status")):
+            if (pb_server_game.STARTED == item.capture_status):
+                capture = "started"
+            elif (pb_server_game.FAILED == item.capture_status):
+                capture = "failed"
+            elif (pb_server_game.SUCCEEDED == item.capture_status):
+                capture += "succeeded"
+        return capture
+
+    @property
     def short_status(self):
         if (self._short_status is None):
             self._short_status = self._get_short_status()

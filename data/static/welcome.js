@@ -2,6 +2,16 @@ var gLastEvent = {}
 gLastEvent["KEYBOARD"] = ""
 var gConn = null;
 var gFullScreen = false;
+var gFlagColours = {}
+gFlagColours["blue"] = "blue"
+gFlagColours["green"] = "green"
+gFlagColours["yellow"] = "yellow"
+gFlagColours["purple"] = "purple"
+
+String.prototype.replaceAll = function(search, replacement) {
+	var target = this;
+	return target.replace(new RegExp(search, 'g'), replacement);
+};
 
 $( document ).ready(
 	function()
@@ -18,6 +28,7 @@ $( document ).ready(
 			if ("new_items" in obj) {
 				console.log('Received: ' + e.data);
 				var list = document.getElementById("items");
+				var flags = document.getElementById("flags");
 				for (var i = 0; i < obj.new_items.length; i++) {
 					name = obj.new_items[i];
 					identifier = "item " + name;
@@ -27,6 +38,14 @@ $( document ).ready(
 						entry.appendChild(document.createTextNode(name));
 						entry.id = identifier;
 						list.appendChild(entry);
+					}
+					var flag_id = "flag_" + name;
+					var flag = document.getElementById(flag_id);
+					if (null == flag) {
+						var colour = gFlagColours[name];
+						var html_flag = "<div id=\"%ID%_circle\" class=\"%COLOUR% circle horizontal\"><div><div id=\"%ID%_border\" class=\"centered flag_name border\"></div><div id=\"%ID%\" class=\"centered flag_name\"></div></div></div>".replaceAll("%ID%", flag_id).replace("%COLOUR%", colour);
+						console.log("html_flag = " + html_flag);
+						flags.innerHTML += html_flag;
 					}
 				}
 			}
@@ -40,6 +59,21 @@ $( document ).ready(
 						console.log("Error for item number " + i + " with id '" + identifier + "'.");
 					} else {
 						node_item.innerHTML = item.status
+					}
+					var flag_id = "flag_" + item.name;
+					var flag = document.getElementById(flag_id);
+					if (null == flag) {
+						console.log("Error for item number " + i + " with id '" + flag_id + "'.");
+					} else {
+						var circle = document.getElementById(flag_id + "_circle");
+						var flag_border = document.getElementById(flag_id + "_border");
+						flag.innerHTML = item.owner;
+						flag_border.innerHTML = item.owner;
+						if ("started" == item.capture) {
+							setBlinkOn(circle);
+						} else {
+							setBlinkOff(circle);
+						}
 					}
 				}
 			}
@@ -57,7 +91,8 @@ $( document ).ready(
 				start_button.innerHTML = obj.start_button;
 				if ("Restart" == obj.start_button) {
 					var height = start_button.getBoundingClientRect().height
-					start_button.style.top = 5 + height / 2;
+					var videofeed_height = document.getElementById("videofeed").getBoundingClientRect().height
+					start_button.style.top = videofeed_height - (5 + height / 2);
 				} else {
 					start_button.style.top = '50%';
 				}
@@ -309,6 +344,38 @@ function fullscreen() {
 		}
 		gFullScreen = !gFullScreen;
 	}
+}
+
+function switchBlink(element) {
+	var class_str = element.className;
+	if (class_str.indexOf("blink") != -1) {
+		element.className = class_str.replace("blink", "").replace("  ", " ");
+	} else {
+		element.className = class_str + " blink";
+	}
+}
+
+function setBlinkOn(element) {
+	var class_str = element.className;
+	if (class_str.indexOf("blink") != -1) {
+		// nothing to do
+	} else {
+		element.className = class_str + " blink";
+	}
+}
+
+function setBlinkOff(element) {
+	var class_str = element.className;
+	if (class_str.indexOf("blink") != -1) {
+		element.className = class_str.replace("blink", "").replace("  ", " ");
+	} else {
+		// nothing to do
+	}
+}
+
+function addFlag() {
+	var flags = document.getElementById("flags");
+	flags.innerHTML += "<div class=\"yellow circle horizontal\" onclick=\"addFlag()\"><div><div id=\"%ID%_border\" class=\"centered flag_name border\"></div><div id=\"%ID%_border\" class=\"centered flag_name\"></div></div></div>"
 }
 
 window.addEventListener("gamepadconnected", connecthandler);
