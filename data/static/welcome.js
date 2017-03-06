@@ -386,15 +386,26 @@ function drawPie(total, done) {
 	var lastend = 0;
 	var data = [total - done, done];
 	var myColor = ['grey', 'lightblue'];
+	var width = canvas.width / 2;
+	var height = canvas.height / 2;
+	var offset = Math.PI / 2;
 
-	for (var i = 0; i < data.length; i++) {
+	for (var i = 0 ; i < data.length ; i++) {
+		var currentSlice = Math.PI * 2 * (data[i] / total);
 		ctx.fillStyle = myColor[i];
 		ctx.beginPath();
-		ctx.moveTo(canvas.width/2,canvas.height/2);
-		ctx.arc(canvas.width/2,canvas.height/2,canvas.height/2,lastend-Math.PI/2,lastend+(Math.PI*2*(data[i]/total))-Math.PI/2,false);
-		ctx.lineTo(canvas.width/2,canvas.height/2);
+		ctx.moveTo(width, height);
+		// rotate by - pi / 2 because the zero is at 3 o'clock (and we want 0 o'clock)
+		ctx.arc(
+			width,
+			height,
+			height, // radius for the full size
+			lastend - offset,
+			lastend + currentSlice - offset,
+			false);
+		ctx.lineTo(width, height);
 		ctx.fill();
-		lastend += Math.PI*2*(data[i]/total);
+		lastend += currentSlice;
 	}
 }
 
