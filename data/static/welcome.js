@@ -97,6 +97,13 @@ $( document ).ready(
 					start_button.style.top = '50%';
 				}
 			}
+			if ("seconds" in obj && "total_seconds" in obj) {
+				var seconds = obj.seconds;
+				var total_seconds = obj.total_seconds;
+				drawPie(total_seconds, seconds);
+			} else {
+				drawPie(1, 0);
+			}
 		};
 		gConn.onclose = function() {
 			console.log('Disconnected.');
@@ -373,9 +380,22 @@ function setBlinkOff(element) {
 	}
 }
 
-function addFlag() {
-	var flags = document.getElementById("flags");
-	flags.innerHTML += "<div class=\"yellow circle horizontal\" onclick=\"addFlag()\"><div><div id=\"%ID%_border\" class=\"centered flag_name border\"></div><div id=\"%ID%_border\" class=\"centered flag_name\"></div></div></div>"
+function drawPie(total, done) {
+	var canvas = document.getElementById("pie");
+	var ctx = canvas.getContext("2d");
+	var lastend = 0;
+	var data = [total - done, done];
+	var myColor = ['grey', 'lightblue'];
+
+	for (var i = 0; i < data.length; i++) {
+		ctx.fillStyle = myColor[i];
+		ctx.beginPath();
+		ctx.moveTo(canvas.width/2,canvas.height/2);
+		ctx.arc(canvas.width/2,canvas.height/2,canvas.height/2,lastend-Math.PI/2,lastend+(Math.PI*2*(data[i]/total))-Math.PI/2,false);
+		ctx.lineTo(canvas.width/2,canvas.height/2);
+		ctx.fill();
+		lastend += Math.PI*2*(data[i]/total);
+	}
 }
 
 window.addEventListener("gamepadconnected", connecthandler);

@@ -162,6 +162,8 @@ class MainHandler(tornado.web.RequestHandler):
             # print ("_handle_game_state")
             message = pb_server_game.GameState()
             message.ParseFromString(payload)
+            total_seconds = None
+            seconds = None
             if (message.HasField("winner")):
                 status = "Game won by team " + message.winner
                 self._update_running(False)
@@ -172,6 +174,9 @@ class MainHandler(tornado.web.RequestHandler):
                     if (message.HasField("seconds")):
                         status += " ({} second(s) left)".format(
                             message.seconds)
+                        seconds = message.seconds
+                    if (message.HasField("total_seconds")):
+                        total_seconds = message.total_seconds
                 else:
                     status = "Game NOT running"
             # print(status)
@@ -194,6 +199,9 @@ class MainHandler(tornado.web.RequestHandler):
                 dico["new_items"] = new_items
             if (items):
                 dico["items"] = items
+            if (seconds and total_seconds):
+                dico["seconds"] = seconds
+                dico["total_seconds"] = total_seconds
             sent = False
             for connection in OrwellConnection.all_connections:
                 connection.send(json.dumps(dico))

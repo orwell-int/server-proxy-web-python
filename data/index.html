@@ -54,6 +54,12 @@
 	border-radius: 50%;
 	z-index: 1;
 }
+.margin5 {
+	margin-top: 5px;
+	margin-right: 5px;
+	margin-left: 5px;
+	margin-bottom: 5px;
+}
 .circle {
     width: 60px;
 	height: 60px;
@@ -142,10 +148,7 @@
 				<!--<image id="videofeed" src="{{ videofeed }}" alt: "Local"  height="100%" style="margin-left:0px;width:auto;"/>-->
 				<input type="button" class="test_button" id="fullscren" value="full screen" onclick="fullscreen()"/>
 				<div id="flags" class="top_middle">
-					<!--<div class="green circle horizontal"><div><div class="centered flag_name border">A</div><div class="centered flag_name">A</div></div></div>-->
-					<!--<div class="purple circle horizontal"><div><div class="centered flag_name border">B</div><div class="centered flag_name">B</div></div></div>-->
-					<!--<div class="blue circle horizontal"><div><div class="centered flag_name border">C</div><div class="centered flag_name">C</div></div></div>-->
-					<!--<div class="yellow circle horizontal" onclick="addFlag()"><div><div class="centered flag_name border">D</div><div class="centered flag_name">D</div></div></div>-->
+					<canvas id="pie" class="margin5 horizontal" width="60" height="60"/>
 				</div>
 				<button id="start_button" onclick="start()" type="button" class="btn btn-primary centered">Start</button>
 				<div class="bottom_right"><div class="team_name border centered2">Team: A</div><div class="team_name centered2">Team: A</div></div>
