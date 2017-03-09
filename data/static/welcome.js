@@ -8,6 +8,16 @@ gFlagColours["green"] = "green"
 gFlagColours["yellow"] = "yellow"
 gFlagColours["purple"] = "purple"
 
+var gFlagRadius = 30;
+var gClockRadius = 45;
+var gContourThickness = 15;
+var gHorizontalSpace = 5;
+var gContourColour = 'orange';
+var gContourMaxHeight = 2 * (gClockRadius + gContourThickness);
+var gContourMinHeight = 2 * (gFlagRadius + gContourThickness);
+var gFlagWidth = 2 * (gFlagRadius + gHorizontalSpace);
+var gClockThickness = 10;
+
 String.prototype.replaceAll = function(search, replacement) {
 	var target = this;
 	return target.replace(new RegExp(search, 'g'), replacement);
@@ -30,6 +40,7 @@ $( document ).ready(
 				var list = document.getElementById("items");
 				var flags = document.getElementById("flags");
 				for (var i = 0; i < obj.new_items.length; i++) {
+					//var is_last = (i + 1 == obj.new_items.length)
 					name = obj.new_items[i];
 					identifier = "item " + name;
 					if (null == document.getElementById(identifier) ) {
@@ -43,10 +54,19 @@ $( document ).ready(
 					var flag = document.getElementById(flag_id);
 					if (null == flag) {
 						var colour = gFlagColours[name];
-						var html_flag = "<div id=\"%ID%_circle\" class=\"%COLOUR% circle horizontal\"><div><div id=\"%ID%_border\" class=\"centered flag_name border\"></div><div id=\"%ID%\" class=\"centered flag_name\"></div></div></div>".replaceAll("%ID%", flag_id).replace("%COLOUR%", colour);
+						var html_flag = "<canvas id=\"%ID%_circle\" height=\"%MAX_HEIGHT%\" width=\"%FLAG_WIDTH%\" ><div><div id=\"%ID%_border\" class=\"centered flag_name border\"></div><div id=\"%ID%\" class=\"centered flag_name\"></div></canvas></div>".replaceAll("%ID%", flag_id).replace("%COLOUR%", colour).replace("%MAX_HEIGHT%", "" + gContourMaxHeight).replace("%FLAG_WIDTH%", gFlagWidth);
+						//var html_flag = "<div id=\"%ID%_circle\" class=\"%COLOUR% circle horizontal\"><div><div id=\"%ID%_border\" class=\"centered flag_name border\"></div><div id=\"%ID%\" class=\"centered flag_name\"></div></div></div>".replaceAll("%ID%", flag_id).replace("%COLOUR%", colour);
 						console.log("html_flag = " + html_flag);
 						flags.innerHTML += html_flag;
 					}
+				}
+				for (var i = 0 ; i < obj.new_items.length ; i++) {
+					var is_last = (i + 1 == obj.new_items.length);
+					name = obj.new_items[i];
+					identifier = "item " + name;
+					var flag_id = "flag_" + name;
+					var colour = gFlagColours[name];
+					draw_flag(flag_id + "_circle", colour, is_last);
 				}
 			}
 			if ("items" in obj) {
@@ -382,6 +402,8 @@ function setBlinkOff(element) {
 
 function drawPie(total, done) {
 	var canvas = document.getElementById("pie");
+	canvas.width = gContourMaxHeight;
+	canvas.height = gContourMaxHeight;
 	var ctx = canvas.getContext("2d");
 	var lastend = 0;
 	var data = [total - done, done];
@@ -390,6 +412,22 @@ function drawPie(total, done) {
 	var height = canvas.height / 2;
 	var offset = Math.PI / 2;
 
+	ctx.beginPath();
+	ctx.fillStyle = 'red';
+	//console.log("ctx.moveTo(", canvas.width, height + gContourMinHeight / 2, ")");
+	ctx.moveTo(canvas.width, height + gContourMinHeight / 2);
+	ctx.arc(
+		width,
+		height,
+		width,
+		Math.PI / 4,
+		Math.PI * 2 - Math.PI / 4,
+		false);
+	ctx.lineTo(canvas.width, height - gContourMinHeight / 2);
+	//console.log("ctx.lineTo(", canvas.width, height - gContourMinHeight / 2, ")");
+	ctx.fill();
+
+	var inner_radius = width - gContourThickness;
 	for (var i = 0 ; i < data.length ; i++) {
 		var currentSlice = Math.PI * 2 * (data[i] / total);
 		ctx.fillStyle = myColor[i];
@@ -399,7 +437,7 @@ function drawPie(total, done) {
 		ctx.arc(
 			width,
 			height,
-			height, // radius for the full size
+			inner_radius,
 			lastend - offset,
 			lastend + currentSlice - offset,
 			false);
@@ -407,6 +445,72 @@ function drawPie(total, done) {
 		ctx.fill();
 		lastend += currentSlice;
 	}
+
+	ctx.beginPath();
+	ctx.fillStyle = '#D3D3D3';
+	ctx.arc(
+		width,
+		height,
+		inner_radius - gClockThickness,
+		0,
+		Math.PI * 2,
+		false);
+	ctx.fill();
+
+	var minutes = Math.floor(done / 60);
+	var seconds = done - minutes * 60;
+	var str_time = "";
+	if (minutes > 9) {
+		str_time += " ";
+	} else {
+		str_time += "0";
+	}
+	str_time += minutes + ":";
+	if (seconds < 10) {
+		str_time += "0";
+	} 
+	str_time += seconds;
+
+	ctx.font = '150% Lucida Console';
+	ctx.textAlign = 'center';
+	ctx.textBaseline = "middle";
+	ctx.fillStyle = 'black';
+	ctx.fillText(str_time, width, height);
+}
+
+function draw_flag(name, colour, is_last) {
+	var canvas = document.getElementById(name);
+	if (is_last) {
+		canvas.width = Math.max(gFlagWidth, gContourThickness + gHorizontalSpace + 2 * gFlagRadius);
+	}
+	var radius = gFlagRadius;
+	var margin = gHorizontalSpace;
+	var thickness = gContourThickness;
+	var vertical_offset = gClockRadius - gFlagRadius;
+	//console.log('draw_flag:', name, radius, margin, vertical_offset, colour, is_last);
+	var context = canvas.getContext("2d");
+	var y_center = radius + thickness;
+	var x_center = radius + margin;
+	var rectangle_width = canvas.width;
+	var rectangle_height = 2 * (radius + thickness);
+	context.fillStyle = gContourColour;
+	if (is_last) {
+		context.beginPath();
+		context.rect(0, vertical_offset, x_center, rectangle_height);
+		context.fill();
+		context.beginPath();
+		context.arc(x_center, y_center + vertical_offset, radius + thickness, -Math.PI / 2, Math.PI / 2, false);
+		context.fill();
+	} else {
+		context.beginPath();
+		context.rect(0, vertical_offset, rectangle_width, rectangle_height);
+		context.fill();
+	}
+	context.beginPath();
+	context.arc(x_center, y_center + vertical_offset, radius, 0, 2 * Math.PI, false);
+	context.fillStyle = colour;
+	context.fill();
+	//console.log('done ! draw_flag:', name, radius, margin, vertical_offset, colour, is_last);
 }
 
 window.addEventListener("gamepadconnected", connecthandler);
