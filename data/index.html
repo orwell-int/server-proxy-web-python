@@ -30,6 +30,8 @@
     left: 50%;
 	transform: translate(-50%, 0%);
 	margin-top: 5px;
+	display: flex;
+	flex-direction: row;
 }
 .bottom_right {
 	position:absolute;
@@ -52,7 +54,7 @@
     width: 20px;
     height: 20px;
 	border-radius: 50%;
-	z-index: 1;
+	z-index: 2;
 }
 .margin5 {
 	margin-top: 5px;
@@ -64,12 +66,12 @@
     width: 60px;
 	height: 60px;
 	border-radius: 50%;
-	z-index: 0;
+	z-index: 1;
 	position: relative;
-	margin-top: 5px;
+	margin-top: auto;
+	margin-bottom: auto;
 	margin-right: 5px;
 	margin-left: 5px;
-	margin-bottom: 5px;
 }
 .red {
 	background: red;
@@ -116,13 +118,13 @@
 	<!--position: relative;-->
 	color:black;
 	font-size: 250%;
-	z-index: 1;
+	z-index: 2;
 	font-family: 'Montserrat', sans-serif;
 }
 .flag_name {
 	color:black;
 	font-size: 250%;
-	z-index: 1;
+	z-index: 2;
 	font-family: 'Montserrat', sans-serif;
 }
 .border {
@@ -130,7 +132,7 @@
 	-webkit-text-stroke-color: white;
 }
 .horizontal {
-	float: left
+	<!--vertical-align: middle;-->
 }
 		</style>
 	</head>
@@ -148,7 +150,8 @@
 				<!--<image id="videofeed" src="{{ videofeed }}" alt: "Local"  height="100%" style="margin-left:0px;width:auto;"/>-->
 				<input type="button" class="test_button" id="fullscren" value="full screen" onclick="fullscreen()"/>
 				<div id="flags" class="top_middle">
-					<canvas id="pie" class="margin5 horizontal" width="60" height="60"/>
+					<!--<canvas id="back_pie" class=""/>-->
+					<canvas id="pie" class="margin5 horizontal centered_horizontaly" width="90" height="90"/>
 				</div>
 				<button id="start_button" onclick="start()" type="button" class="btn btn-primary centered">Start</button>
 				<div class="bottom_right"><div class="team_name border centered2">Team: A</div><div class="team_name centered2">Team: A</div></div>
