@@ -3,20 +3,21 @@ gLastEvent["KEYBOARD"] = ""
 var gConn = null;
 var gFullScreen = false;
 var gFlagColours = {}
-gFlagColours["blue"] = "blue"
-gFlagColours["green"] = "green"
-gFlagColours["yellow"] = "yellow"
-gFlagColours["purple"] = "purple"
+gFlagColours["blue"] = "rgb(10, 81, 255)"
+gFlagColours["green"] = "rgb(3, 232, 107)"
+gFlagColours["yellow"] = "rgb(255, 251, 14)"
+gFlagColours["purple"] = "rgb(224, 16, 232)"
 
 var gFlagRadius = 30;
 var gClockRadius = 45;
 var gContourThickness = 15;
 var gHorizontalSpace = 5;
-var gContourColour = 'orange';
-var gContourMaxHeight = 2 * (gClockRadius + gContourThickness);
-var gContourMinHeight = 2 * (gFlagRadius + gContourThickness);
+var gContourColour = 'rgba(83, 87, 247, 0.5)';
+var gContourMaxHeight_x2 = 2 * (gClockRadius + gContourThickness);
+var gContourMinHeight = (gFlagRadius + gContourThickness);
 var gFlagWidth = 2 * (gFlagRadius + gHorizontalSpace);
 var gClockThickness = 10;
+var gContourClockAngle;
 
 String.prototype.replaceAll = function(search, replacement) {
 	var target = this;
@@ -27,6 +28,11 @@ $( document ).ready(
 	function()
 	{
 		console.log("document / ready");
+		console.log("gContourClockAngle = " + gContourClockAngle);
+		console.log("Pi / 4 = " + (Math.PI / 4));
+		var arcsin = gContourMinHeight / (gClockRadius + gContourThickness);
+		console.log("arcsin = " + arcsin);
+		gContourClockAngle = Math.asin(arcsin);
 		console.log("open SockJS connection")
 		gConn = new SockJS('//' + window.location.host + '/orwell');
 		console.log("gConn = " + gConn)
@@ -54,7 +60,7 @@ $( document ).ready(
 					var flag = document.getElementById(flag_id);
 					if (null == flag) {
 						var colour = gFlagColours[name];
-						var html_flag = "<canvas id=\"%ID%_circle\" height=\"%MAX_HEIGHT%\" width=\"%FLAG_WIDTH%\" ><div><div id=\"%ID%_border\" class=\"centered flag_name border\"></div><div id=\"%ID%\" class=\"centered flag_name\"></div></canvas></div>".replaceAll("%ID%", flag_id).replace("%COLOUR%", colour).replace("%MAX_HEIGHT%", "" + gContourMaxHeight).replace("%FLAG_WIDTH%", gFlagWidth);
+						var html_flag = "<canvas id=\"%ID%_circle\" height=\"%MAX_HEIGHT%\" width=\"%FLAG_WIDTH%\" ><div><div id=\"%ID%_border\" class=\"centered flag_name border\"></div><div id=\"%ID%\" class=\"centered flag_name\"></div></canvas></div>".replaceAll("%ID%", flag_id).replace("%COLOUR%", colour).replace("%MAX_HEIGHT%", "" + gContourMaxHeight_x2).replace("%FLAG_WIDTH%", gFlagWidth);
 						//var html_flag = "<div id=\"%ID%_circle\" class=\"%COLOUR% circle horizontal\"><div><div id=\"%ID%_border\" class=\"centered flag_name border\"></div><div id=\"%ID%\" class=\"centered flag_name\"></div></div></div>".replaceAll("%ID%", flag_id).replace("%COLOUR%", colour);
 						console.log("html_flag = " + html_flag);
 						flags.innerHTML += html_flag;
@@ -402,8 +408,8 @@ function setBlinkOff(element) {
 
 function drawPie(total, done) {
 	var canvas = document.getElementById("pie");
-	canvas.width = gContourMaxHeight;
-	canvas.height = gContourMaxHeight;
+	canvas.width = gContourMaxHeight_x2;
+	canvas.height = gContourMaxHeight_x2;
 	var ctx = canvas.getContext("2d");
 	var lastend = 0;
 	var data = [total - done, done];
@@ -413,18 +419,16 @@ function drawPie(total, done) {
 	var offset = Math.PI / 2;
 
 	ctx.beginPath();
-	ctx.fillStyle = 'red';
-	//console.log("ctx.moveTo(", canvas.width, height + gContourMinHeight / 2, ")");
-	ctx.moveTo(canvas.width, height + gContourMinHeight / 2);
+	ctx.fillStyle = gContourColour;
+	ctx.moveTo(canvas.width, height + gContourMinHeight);
 	ctx.arc(
 		width,
 		height,
 		width,
-		Math.PI / 4,
-		Math.PI * 2 - Math.PI / 4,
+		gContourClockAngle,
+		Math.PI * 2 - gContourClockAngle,
 		false);
-	ctx.lineTo(canvas.width, height - gContourMinHeight / 2);
-	//console.log("ctx.lineTo(", canvas.width, height - gContourMinHeight / 2, ")");
+	ctx.lineTo(canvas.width, height - gContourMinHeight);
 	ctx.fill();
 
 	var inner_radius = width - gContourThickness;
