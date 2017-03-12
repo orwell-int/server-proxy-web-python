@@ -164,6 +164,7 @@ class MainHandler(tornado.web.RequestHandler):
             message.ParseFromString(payload)
             total_seconds = None
             seconds = None
+            running = False
             if (message.HasField("winner")):
                 status = "Game won by team " + message.winner
                 self._update_running(False)
@@ -177,6 +178,7 @@ class MainHandler(tornado.web.RequestHandler):
                         seconds = message.seconds
                     if (message.HasField("total_seconds")):
                         total_seconds = message.total_seconds
+                    running = True
                 else:
                     status = "Game NOT running"
             # print(status)
@@ -189,11 +191,11 @@ class MainHandler(tornado.web.RequestHandler):
                         {"name": item_wrapper.name,
                          "status": item_wrapper.short_status,
                          "capture": item_wrapper.capture,
-                         "owner": item_wrapper.owner})
+                         "owner": item_wrapper.team})
                 else:
                     self._items.add(item_wrapper.name)
                     new_items.append(item_wrapper.name)
-            dico = {"status": status}
+            dico = {"status": status, "running": running}
             if (new_items):
                 print("new_items = " + str(new_items))
                 dico["new_items"] = new_items

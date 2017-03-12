@@ -60,8 +60,7 @@ $( document ).ready(
 					var flag = document.getElementById(flag_id);
 					if (null == flag) {
 						var colour = gFlagColours[name];
-						var html_flag = "<canvas id=\"%ID%_circle\" height=\"%MAX_HEIGHT%\" width=\"%FLAG_WIDTH%\" ><div><div id=\"%ID%_border\" class=\"centered flag_name border\"></div><div id=\"%ID%\" class=\"centered flag_name\"></div></canvas></div>".replaceAll("%ID%", flag_id).replace("%COLOUR%", colour).replace("%MAX_HEIGHT%", "" + gContourMaxHeight_x2).replace("%FLAG_WIDTH%", gFlagWidth);
-						//var html_flag = "<div id=\"%ID%_circle\" class=\"%COLOUR% circle horizontal\"><div><div id=\"%ID%_border\" class=\"centered flag_name border\"></div><div id=\"%ID%\" class=\"centered flag_name\"></div></div></div>".replaceAll("%ID%", flag_id).replace("%COLOUR%", colour);
+						var html_flag = "<div width=\"%FLAG_WIDTH%\"><div id=\"%ID%_inner\" style=\"position:relative;top:50%\"><div id=\"%ID%_text_border\" class=\"centered flag_name z2 border\"></div><div id=\"%ID%_text\" class=\"centered flag_name z3\"></div></div><canvas id=\"%ID%_circle\" height=\"%MAX_HEIGHT%\" width=\"%FLAG_WIDTH%\"></canvas></div>".replaceAll("%ID%", flag_id).replace("%COLOUR%", colour).replace("%MAX_HEIGHT%", "" + gContourMaxHeight_x2).replaceAll("%FLAG_WIDTH%", gFlagWidth);
 						console.log("html_flag = " + html_flag);
 						flags.innerHTML += html_flag;
 					}
@@ -73,6 +72,12 @@ $( document ).ready(
 					var flag_id = "flag_" + name;
 					var colour = gFlagColours[name];
 					draw_flag(flag_id + "_circle", colour, is_last);
+					if (is_last) {
+						var flag_inner = document.getElementById(flag_id + "_inner");
+						var new_style = flag_inner.getAttribute('style') + ";left:" + ((gHorizontalSpace - gContourThickness) / 2);
+						console.log("set " + flag_inner.id + " to style = " + new_style);
+						flag_inner.setAttribute('style', new_style);
+					}
 				}
 			}
 			if ("items" in obj) {
@@ -87,15 +92,17 @@ $( document ).ready(
 						node_item.innerHTML = item.status
 					}
 					var flag_id = "flag_" + item.name;
-					var flag = document.getElementById(flag_id);
-					if (null == flag) {
-						console.log("Error for item number " + i + " with id '" + flag_id + "'.");
+					var flag_text_id = flag_id + "_text";
+					var flag_text = document.getElementById(flag_text_id);
+					if (null == flag_text) {
+						console.log("Error for item number " + i + " with id '" + flag_text_id + "'.");
 					} else {
-						var circle = document.getElementById(flag_id + "_circle");
-						var flag_border = document.getElementById(flag_id + "_border");
-						flag.innerHTML = item.owner;
-						flag_border.innerHTML = item.owner;
+						var circle = document.getElementById(flag_id + "_inner");
+						var flag_text_border = document.getElementById(flag_id + "_text_border");
+						flag_text.innerHTML = item.owner;
+						flag_text_border.innerHTML = item.owner;
 						if ("started" == item.capture) {
+							console.log("blink: " + flag_text_id + " ; owner: '" + item.owner + "'");
 							setBlinkOn(circle);
 						} else {
 							setBlinkOff(circle);
@@ -123,10 +130,16 @@ $( document ).ready(
 					start_button.style.top = '50%';
 				}
 			}
-			if ("seconds" in obj && "total_seconds" in obj) {
-				var seconds = obj.seconds;
-				var total_seconds = obj.total_seconds;
-				drawPie(total_seconds, seconds);
+			var running = true;
+			if ("running" in obj) {
+				running = obj.running;
+			}
+			if (running) {
+				if ("seconds" in obj && "total_seconds" in obj) {
+					var seconds = obj.seconds;
+					var total_seconds = obj.total_seconds;
+					drawPie(total_seconds, seconds);
+				}
 			} else {
 				drawPie(1, 0);
 			}

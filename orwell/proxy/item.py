@@ -23,6 +23,17 @@ class Item(object):
             return ""
 
     @property
+    def capturer(self):
+        if (self._pb_item.HasField("capturer")):
+            return self._pb_item.capturer
+        else:
+            return ""
+
+    @property
+    def team(self):
+        return self.capturer or self.owner
+
+    @property
     def capture(self):
         item = self._pb_item
         capture = ""
