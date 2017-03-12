@@ -28,11 +28,12 @@ $( document ).ready(
 	function()
 	{
 		console.log("document / ready");
-		console.log("gContourClockAngle = " + gContourClockAngle);
+		draw_flag_canvas_team();
 		console.log("Pi / 4 = " + (Math.PI / 4));
 		var arcsin = gContourMinHeight / (gClockRadius + gContourThickness);
 		console.log("arcsin = " + arcsin);
 		gContourClockAngle = Math.asin(arcsin);
+		console.log("gContourClockAngle = " + gContourClockAngle);
 		console.log("open SockJS connection")
 		gConn = new SockJS('//' + window.location.host + '/orwell');
 		console.log("gConn = " + gConn)
@@ -528,6 +529,35 @@ function draw_flag(name, colour, is_last) {
 	context.fillStyle = colour;
 	context.fill();
 	//console.log('done ! draw_flag:', name, radius, margin, vertical_offset, colour, is_last);
+}
+
+function draw_flag_canvas_team() {
+	var canvas = document.getElementById("canvas_team");
+	var team_rect = document.getElementById("team_border").getBoundingClientRect();
+	console.log("team_rect = " + team_rect);
+	var offset = 10;
+	var height = team_rect.height + offset * 2;
+	var width = team_rect.width + offset * 2;
+	var bottom_right = document.getElementById("bottom_right_inner");
+	// this is horrible
+	bottom_right.setAttribute(
+		"style",
+		bottom_right.getAttribute("style") + ";height:" + height + ";width:" + width);
+	console.log("new height = " + height);
+	console.log("new width = " + width);
+	canvas.height = height;
+	canvas.width = width;
+	height -= offset * 2;
+	width -= offset * 2;
+	var context = canvas.getContext("2d");
+	context.fillStyle = gContourColour;
+	context.strokeStyle = gContourColour;
+	context.lineJoin = "round";
+	context.lineWidth = offset * 2;
+	context.beginPath();
+	context.strokeRect(offset, offset, width, height);
+	context.fillRect(offset + offset, offset + offset, width - 2 * offset, height - 2 * offset);
+	context.endPath();
 }
 
 window.addEventListener("gamepadconnected", connecthandler);
