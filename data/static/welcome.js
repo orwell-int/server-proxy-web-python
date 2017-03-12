@@ -533,11 +533,11 @@ function draw_flag(name, colour, is_last) {
 
 function draw_flag_canvas_team() {
 	var canvas = document.getElementById("canvas_team");
-	var team_rect = document.getElementById("team_border").getBoundingClientRect();
+	var team_rect = document.getElementById("team").getBoundingClientRect();
 	console.log("team_rect = " + team_rect);
 	var offset = 10;
 	var height = team_rect.height + offset * 2;
-	var width = team_rect.width + offset * 2;
+	var width = team_rect.width + 20 + offset * 2;
 	var bottom_right = document.getElementById("bottom_right_inner");
 	// this is horrible
 	bottom_right.setAttribute(
@@ -557,7 +557,6 @@ function draw_flag_canvas_team() {
 	context.beginPath();
 	context.strokeRect(offset, offset, width, height);
 	context.fillRect(offset + offset, offset + offset, width - 2 * offset, height - 2 * offset);
-	context.endPath();
 }
 
 window.addEventListener("gamepadconnected", connecthandler);

@@ -38,7 +38,7 @@
     bottom:0;
     right:0;
 	margin-right: 10px;
-	margin-bottom: 5px;
+	margin-bottom: 10px;
 	display: inline-block;
 	white-space: nowrap;
 }
@@ -115,8 +115,7 @@
 	}
 }
 .team_name {
-	<!--position: relative;-->
-	color:black;
+	color: #F8F8F8;
 	font-size: 250%;
 	z-index: 2;
 	font-family: 'Montserrat', sans-serif;
@@ -156,7 +155,12 @@
 					<canvas id="pie" width="100" height="100"/>
 				</div>
 				<button id="start_button" onclick="start()" type="button" class="btn btn-primary centered">Start</button>
-				<div id="bottom_right" class="bottom_right"><div id="bottom_right_inner" style="position: relative;"><canvas id="canvas_team" class="centered2"></canvas><div id="team_border" class="team_name border centered2">Team: A</div><div id="team" class="team_name centered2">Team: A</div></div></div>
+				<div id="bottom_right" class="bottom_right">
+					<div id="bottom_right_inner" style="position: relative;">
+						<canvas id="canvas_team" class="centered2"></canvas>
+						<div id="team" class="team_name centered2"> Team: A </div>
+					</div>
+				</div>
 				<div id="hud" class="bottom_left">
 					<div>
 						<ol id="items"/>
