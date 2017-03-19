@@ -24,6 +24,12 @@
 	left: 50%;
 	transform: translate(-50%, -50%);
 }
+.centered3 {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -150%);
+}
 .top_middle {
 	position:absolute;
     top:0;
@@ -125,6 +131,11 @@
 	font-size: 250%;
 	font-family: 'Montserrat', sans-serif;
 }
+.big {
+	color:black;
+	font-size: 350%;
+	font-family: 'Montserrat', sans-serif;
+}
 .z2 {
 	z-index: 2;
 }
@@ -154,11 +165,13 @@
 					<!--<canvas id="back_pie" class=""/>-->
 					<canvas id="pie" width="100" height="100"/>
 				</div>
+				<div id="end_game" class="centered3 big z3"></div>
+				<div id="end_game_border" class="centered3 big z2 border"></div>
 				<button id="start_button" onclick="start()" type="button" class="btn btn-primary centered">Start</button>
 				<div id="bottom_right" class="bottom_right">
 					<div id="bottom_right_inner" style="position: relative;">
 						<canvas id="canvas_team" class="centered2"></canvas>
-						<div id="team" class="team_name centered2"> Team: A </div>
+						<div id="team" class="team_name centered2">Team: </div>
 					</div>
 				</div>
 				<div id="hud" class="bottom_left">

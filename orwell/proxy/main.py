@@ -81,6 +81,7 @@ class MainHandler(tornado.web.RequestHandler):
         self._last_fire_weapon2 = None
         self._items = set()
         self._running = False
+        self._teams = 0
 
     @tornado.web.asynchronous
     def get(self):
@@ -165,9 +166,13 @@ class MainHandler(tornado.web.RequestHandler):
             total_seconds = None
             seconds = None
             running = False
+            print("len(message.teams =", len(message.teams))
+            if (len(message.teams) != 0):
+                self._teams = len(message.teams)
             if (message.HasField("winner")):
                 status = "Game won by team " + message.winner
                 self._update_running(False)
+                winner = message.winner
             else:
                 self._update_running(message.playing)
                 if (message.playing):
@@ -179,8 +184,13 @@ class MainHandler(tornado.web.RequestHandler):
                     if (message.HasField("total_seconds")):
                         total_seconds = message.total_seconds
                     running = True
+                    winner = ""
                 else:
                     status = "Game NOT running"
+                    if (1 == self._teams):
+                        winner = "defeat"
+                    else:
+                        winner = "-"
             # print(status)
             new_items = []
             items = []
@@ -195,7 +205,11 @@ class MainHandler(tornado.web.RequestHandler):
                 else:
                     self._items.add(item_wrapper.name)
                     new_items.append(item_wrapper.name)
-            dico = {"status": status, "running": running}
+            dico = {
+                    "status": status,
+                    "running": running,
+                    "winner": winner
+                    }
             if (new_items):
                 print("new_items = " + str(new_items))
                 dico["new_items"] = new_items

@@ -3,6 +3,8 @@ gLastEvent["KEYBOARD"] = ""
 var gConn = null;
 var gFullScreen = false;
 var gFlagColours = {}
+var gTeam = "A"
+var gLastSeconds = 0
 gFlagColours["blue"] = "rgb(10, 81, 255)"
 gFlagColours["green"] = "rgb(3, 232, 107)"
 gFlagColours["yellow"] = "rgb(255, 251, 14)"
@@ -37,6 +39,7 @@ $( document ).ready(
 		console.log("open SockJS connection")
 		gConn = new SockJS('//' + window.location.host + '/orwell');
 		console.log("gConn = " + gConn)
+		document.getElementById("team").innerHTML += " " + gTeam;
 		gConn.onopen = function() {
 			console.log('Connected.');
 		};
@@ -117,6 +120,17 @@ $( document ).ready(
 			if ("status" in obj) {
 				document.getElementById("status").innerHTML = obj.status;
 			}
+			if ("winner" in obj) {
+				if (obj.winner == gTeam) {
+					document.getElementById("end_game").innerHTML = "Victory (" + gLastSeconds + "s)";
+				} else if (obj.winner == "-") {
+					document.getElementById("end_game").innerHTML = "Draw";
+				} else if (obj.winner == "") {
+					document.getElementById("end_game").innerHTML = "";
+				} else {
+					document.getElementById("end_game").innerHTML = "Defeat";
+				}
+			}
 			if ("videofeed" in obj) {
 				document.getElementById("videofeed").setAttribute("src", obj.videofeed);
 			}
@@ -140,6 +154,7 @@ $( document ).ready(
 					var seconds = obj.seconds;
 					var total_seconds = obj.total_seconds;
 					drawPie(total_seconds, seconds);
+					gLastSeconds = total_seconds - seconds;
 				}
 			} else {
 				drawPie(1, 0);
