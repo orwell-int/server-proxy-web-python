@@ -39,6 +39,8 @@ class Joystick(object):
         self.right = 0
         self.fire_weapon1 = False
         self.fire_weapon2 = False
+        self.start = False
+        self._debug = False
 
     def _round(self, value):
         new_value = int(value / self._precision) * self._precision
@@ -63,17 +65,20 @@ class Joystick(object):
         # print("x = " + str(x))
         y = axes.get(1, 0.0)
         # print("y = " + str(y))
-        if (buttons.get(2, 0) != 0):
-            # X
-            self._angle -= 0.0001
-            print("angle = " + str(self._angle))
-        if (buttons.get(1, 0) != 0):
-            # B
-            self._angle += 0.0001
-            print("angle = " + str(self._angle))
-        if (buttons.get(3, 0) != 0):
-            # Y
-            self._toggle_direction()
+        if (self._debug):
+            if (buttons.get(2, 0) != 0):
+                # X
+                self._angle -= 0.0001
+                print("angle = " + str(self._angle))
+            if (buttons.get(1, 0) != 0):
+                # B
+                self._angle += 0.0001
+                print("angle = " + str(self._angle))
+            if (buttons.get(3, 0) != 0):
+                # Y
+                self._toggle_direction()
+        if (buttons.get(11, 0) != 0):
+            self.start = True
         if (JoystickType.xinput == self._joystick_type):
             # Gamepad
             factor = self._invert_direction * buttons.get(7, 0.0)

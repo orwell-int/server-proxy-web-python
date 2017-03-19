@@ -293,6 +293,13 @@ class MainHandler(tornado.web.RequestHandler):
             right = self._joysticks[index].right
             fire_weapon1 = self._joysticks[index].fire_weapon1
             fire_weapon2 = self._joysticks[index].fire_weapon2
+            start = self._joysticks[index].start
+            if (start):
+                hello = self._build_hello(True)
+                print("Send Hello: " + repr(hello))
+                self._push_stream.send(hello)
+                self._joysticks[index].start = False
+
 
         if (self._last_right != right) or (self._last_left != left) or \
                 (self._last_fire_weapon1 != fire_weapon1) or \
@@ -334,6 +341,7 @@ class VideoHandler(tornado.web.RequestHandler):
         command += ' | gst-launch-1.0 filesrc location=/dev/fd/0'
         command += ' ! h264parse'
         command += ' ! avdec_h264'
+        # command += ' ! videoflip method="rotate-180"'
         command += ' ! jpegenc'
         command += ' ! multipartmux'
         command += ' ! filesink location=/dev/stdout'
