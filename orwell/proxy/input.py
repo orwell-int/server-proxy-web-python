@@ -77,8 +77,6 @@ class Joystick(object):
             if (buttons.get(3, 0) != 0):
                 # Y
                 self._toggle_direction()
-        if (buttons.get(11, 0) != 0):
-            self.start = True
         if (JoystickType.xinput == self._joystick_type):
             # Gamepad
             factor = self._invert_direction * buttons.get(7, 0.0)
@@ -87,12 +85,16 @@ class Joystick(object):
             self.fire_weapon1 = (buttons.get(4, 0) != 0)
             # left trigger
             self.fire_weapon2 = (buttons.get(6, 0) != 0)
+            if (buttons.get(9, 0) != 0):
+                self.start = True
         else:
             # HOTAS
             factor = -self._invert_direction * axes.get(2, 0.0)
             # print("factor = " + str(factor))
             self.fire_weapon1 = (buttons.get(1, 0) != 0)
             self.fire_weapon2 = (buttons.get(0, 0) != 0)
+            if (buttons.get(11, 0) != 0):
+                self.start = True
         self._convert(x, y, factor)
 
     def _toggle_direction(self):

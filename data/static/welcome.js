@@ -149,15 +149,6 @@ $( document ).ready(
 			console.log('Disconnected.');
 			gConn = null;
 		};
-		//var ProtoBuf = require("protobufjs");
-		$( "a" ).click(
-			function( event )
-			{
-				//event.preventDefault();
-				//$( this ).hide( "slow" );
-				alert( "Thanks for visiting!" );
-			}
-		);
 		$( document ).keydown(
 			function(event)
 			{
@@ -196,8 +187,6 @@ $( document ).ready(
 				{
 					if (newEvent != gLastEvent["KEYBOARD"])
 					{
-						$("#textField").html(newEvent);
-						//console.log(newEvent)
 						callServer(newEvent)
 						gLastEvent["KEYBOARD"] = newEvent
 					}
@@ -237,45 +226,8 @@ function connecthandler(e) {
 
 function addgamepad(gamepad) {
 	controllers[gamepad.index] = gamepad;
-
-	var d = document.createElement("div");
-	d.setAttribute("id", "controller" + gamepad.index);
-
-	var t = document.createElement("h1");
-	t.appendChild(document.createTextNode("gamepad: " + gamepad.id));
-	d.appendChild(t);
-
 	gLastEvent[gamepad.index] = ""
 	callServer("new_joystick" + gamepad.index + " " + gamepad.id)
-
-	var b = document.createElement("div");
-	b.className = "buttons";
-
-	console.log('add buttons ; number: ' + gamepad.buttons.length);
-	for (var i = 0; i < gamepad.buttons.length; i++) {
-		var e = document.createElement("span");
-		e.className = "button";
-		//e.id = "b" + i;
-		e.innerHTML = i;
-		b.appendChild(e);
-	}
-
-	d.appendChild(b);
-
-	var a = document.createElement("div");
-	a.className = "axes";
-
-	for (var i = 0; i < gamepad.axes.length; i++) {
-		var p = document.createElement("progress");
-		p.className = "axis";
-		//p.id = "a" + i;
-		p.setAttribute("max", "2");
-		p.setAttribute("value", "1");
-		p.innerHTML = i;
-		a.appendChild(p);
-	}
-
-	d.appendChild(a);
 
 	// See https://github.com/luser/gamepadtest/blob/master/index.html
 	var start = document.getElementById("start");
@@ -283,7 +235,6 @@ function addgamepad(gamepad) {
 		start.style.display = "none";
 	}
 
-	document.body.appendChild(d);
 	requestAnimationFrame(updateStatus);
 }
 
@@ -292,8 +243,6 @@ function disconnecthandler(e) {
 }
 
 function removegamepad(gamepad) {
-	var d = document.getElementById("controller" + gamepad.index);
-	document.body.removeChild(d);
 	delete controllers[gamepad.index];
 }
 
@@ -307,12 +256,9 @@ function updateStatus() {
 
 	for (j in controllers) {
 		var controller = controllers[j];
-		var d = document.getElementById("controller" + j);
-		var buttons = d.getElementsByClassName("button");
 		var newEvent = "";
 
 		for (i = 0; i < controller.buttons.length; i++) {
-			var b = buttons[i];
 			var val = controller.buttons[i];
 			var pressed = val == 1.0;
 			if (typeof(val) == "object") {
@@ -327,22 +273,9 @@ function updateStatus() {
 				value = val;
 			}
 			newEvent += "b" + i + "=" + value;
-
-			var pct = Math.round(val * 100) + "%";
-			b.style.backgroundSize = pct + " " + pct;
-
-			if (pressed) {
-				b.className = "button pressed";
-			} else {
-				b.className = "button";
-			}
 		}
 
-		var axes = d.getElementsByClassName("axis");
 		for (i = 0; i < controller.axes.length; i++) {
-			var a = axes[i];
-			a.innerHTML = i + ": " + controller.axes[i].toFixed(4);
-			a.setAttribute("value", controller.axes[i] + 1);
 			if ("" != newEvent) {
 				newEvent += ";";
 			}
@@ -353,7 +286,7 @@ function updateStatus() {
 			newEvent = "joystick" + j + " " + newEvent
 			if (newEvent != gLastEvent[j])
 			{
-				$("#textField").html(newEvent);
+				//console.log(newEvent);
 				callServer(newEvent);
 				gLastEvent[j] = newEvent;
 			}

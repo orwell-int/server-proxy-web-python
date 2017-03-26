@@ -300,7 +300,6 @@ class MainHandler(tornado.web.RequestHandler):
                 self._push_stream.send(hello)
                 self._joysticks[index].start = False
 
-
         if (self._last_right != right) or (self._last_left != left) or \
                 (self._last_fire_weapon1 != fire_weapon1) or \
                 (self._last_fire_weapon2 != fire_weapon2):
