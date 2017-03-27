@@ -39,6 +39,15 @@
 	display: flex;
 	flex-direction: row;
 }
+.top_left {
+	position:absolute;
+    top:0;
+    left:0;
+	margin-left: 10px;
+	margin-top: 10px;
+	display: inline-block;
+	white-space: nowrap;
+}
 .bottom_right {
 	position:absolute;
     bottom:0;
@@ -168,8 +177,8 @@
 				<div id="end_game" class="centered3 big z3"></div>
 				<div id="end_game_border" class="centered3 big z2 border"></div>
 				<button id="start_button" onclick="start()" type="button" class="btn btn-primary centered">Start</button>
-				<div id="bottom_right" class="bottom_right">
-					<div id="bottom_right_inner" style="position: relative;">
+				<div id="top_left" class="top_left">
+					<div id="top_left_inner" style="position: relative;">
 						<canvas id="canvas_team" class="centered2"></canvas>
 						<div id="team" class="team_name centered2">Team: </div>
 					</div>

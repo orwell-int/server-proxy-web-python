@@ -486,11 +486,11 @@ function draw_flag_canvas_team() {
 	var offset = 10;
 	var height = team_rect.height + offset * 2;
 	var width = team_rect.width + 20 + offset * 2;
-	var bottom_right = document.getElementById("bottom_right_inner");
+	var top_left = document.getElementById("top_left_inner");
 	// this is horrible
-	bottom_right.setAttribute(
+	top_left.setAttribute(
 		"style",
-		bottom_right.getAttribute("style") + ";height:" + height + ";width:" + width);
+		top_left.getAttribute("style") + ";height:" + height + ";width:" + width);
 	console.log("new height = " + height);
 	console.log("new width = " + width);
 	canvas.height = height;
