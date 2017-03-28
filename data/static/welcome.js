@@ -20,6 +20,13 @@ var gContourMinHeight = (gFlagRadius + gContourThickness);
 var gFlagWidth = 2 * (gFlagRadius + gHorizontalSpace);
 var gClockThickness = 10;
 var gContourClockAngle;
+var gBatteryCanvasWidth = 200;
+var gBatteryCanvasHeight = 200;
+var gBatteryColourH = 136;
+var gBatteryColourS = 83;
+var gBatteryColourL = 58;
+var gBatteryColour = getHSLA(gBatteryColourH, gBatteryColourS, gBatteryColourL, 0.5);
+var gBatteryColourBadH = 0;
 
 String.prototype.replaceAll = function(search, replacement) {
 	var target = this;
@@ -31,6 +38,7 @@ $( document ).ready(
 	{
 		console.log("document / ready");
 		draw_flag_canvas_team();
+		draw_battery();
 		console.log("Pi / 4 = " + (Math.PI / 4));
 		var arcsin = gContourMinHeight / (gClockRadius + gContourThickness);
 		console.log("arcsin = " + arcsin);
@@ -506,6 +514,64 @@ function draw_flag_canvas_team() {
 	context.strokeRect(offset, offset, width, height);
 	context.fillRect(offset + offset, offset + offset, width - 2 * offset, height - 2 * offset);
 }
+
+function getHSLA(hue, saturation, lightness, alpha) {
+	return "hsla(" + hue + ", " + saturation + "%, " + lightness + "%, " + alpha + ")";
+}
+
+function draw_battery() {
+	var canvas = document.getElementById("canvas_battery");
+	var context = canvas.getContext("2d");
+	var offset = 10;
+	canvas.setAttribute("width", gBatteryCanvasWidth)
+	canvas.setAttribute("height", gBatteryCanvasHeight)
+	var width = gBatteryCanvasWidth - offset * 2;
+	var height = gBatteryCanvasHeight - offset * 2;
+	context.fillStyle = gContourColour;
+	context.strokeStyle = gContourColour;
+	context.lineJoin = "round";
+	context.lineWidth = offset * 2;
+	context.beginPath();
+	context.strokeRect(offset, offset, width, height);
+	context.fillRect(offset + offset, offset + offset, width - 2 * offset, height - 2 * offset);
+	context.fillStyle = gBatteryColour;
+	context.strokeStyle = gBatteryColour;
+	var line_width = 2;
+	context.lineWidth = line_width;
+	var rectangle_y = offset * 2;
+	var rectangle_width = 50;
+	var rectangle_x = (gBatteryCanvasWidth - rectangle_width) / 2;
+	var rectangle_height = 20;
+	var rectangle_head_width = 5;
+	var rectangle_head_height = 10;
+	var rectangle_head_offset = (rectangle_height - rectangle_head_height) / 2;
+	var inner_rectangle_x = rectangle_x + line_width / 2;
+	var inner_rectangle_y = rectangle_y + line_width / 2;
+	var inner_rectangle_width = rectangle_width - line_width;
+	var inner_rectangle_height = rectangle_height - line_width;
+	context.strokeRect(rectangle_x, rectangle_y, rectangle_width, rectangle_height);
+	context.fillRect(
+		rectangle_x + rectangle_width + line_width / 2,
+		rectangle_y + rectangle_head_offset,
+		rectangle_head_width,
+		rectangle_head_height);
+	var percentage = 100;
+	var ratio = percentage / 100;
+	var proportional_inner_width = inner_rectangle_width * ratio;
+	var hue_length = gBatteryColourH - gBatteryColourBadH;
+	var hue = gBatteryColourH - hue_length * (1 - ratio);
+
+	var proportional_colour = getHSLA(hue, gBatteryColourS, gBatteryColourL, 0.5);
+	context.fillStyle = proportional_colour;
+	context.strokeStyle = proportional_colour;
+	context.fillRect(
+		inner_rectangle_x,
+		inner_rectangle_y,
+		proportional_inner_width,
+		inner_rectangle_height);
+}
+
+
 
 window.addEventListener("gamepadconnected", connecthandler);
 window.addEventListener("gamepaddisconnected", disconnecthandler);
