@@ -21,12 +21,15 @@ var gFlagWidth = 2 * (gFlagRadius + gHorizontalSpace);
 var gClockThickness = 10;
 var gContourClockAngle;
 var gBatteryCanvasWidth = 200;
-var gBatteryCanvasHeight = 200;
+var gBatteryCanvasHeight = 220;
 var gBatteryColourH = 136;
 var gBatteryColourS = 83;
 var gBatteryColourL = 58;
 var gBatteryColour = getHSLA(gBatteryColourH, gBatteryColourS, gBatteryColourL, 0.5);
 var gBatteryColourBadH = 0;
+var gTrackColour = 'rgba(40, 40, 40, 0.5)';
+var gTankColour = 'rgba(70, 70, 70, 0.5)';
+var gCameraColour = 'rgba(0, 0, 0, 0.5)';
 
 String.prototype.replaceAll = function(search, replacement) {
 	var target = this;
@@ -523,6 +526,7 @@ function draw_battery() {
 	var canvas = document.getElementById("canvas_battery");
 	var context = canvas.getContext("2d");
 	var offset = 10;
+	var x_center = gBatteryCanvasWidth / 2;
 	canvas.setAttribute("width", gBatteryCanvasWidth)
 	canvas.setAttribute("height", gBatteryCanvasHeight)
 	var width = gBatteryCanvasWidth - offset * 2;
@@ -569,9 +573,69 @@ function draw_battery() {
 		inner_rectangle_y,
 		proportional_inner_width,
 		inner_rectangle_height);
+
+	context.fillStyle = gTrackColour;
+	context.strokeStyle = gTrackColour;
+	context.lineWidth = 1;
+
+	var half_tank_width = 22;
+	var tank_width = half_tank_width * 2;
+	var half_tank_height = 33;
+	var tank_height = half_tank_height * 2;
+	var tank_space = 4;
+	var track_y = rectangle_y + rectangle_height + offset * 2;
+	var track_width = 28;
+	var track_height = 110;
+	var tank_mid_y = track_y + track_height / 2;
+	var left_track_x = x_center - half_tank_width - tank_space - track_width;
+	var right_track_x = x_center + half_tank_width + tank_space;
+	context.fillRect(left_track_x, track_y, track_width, track_height);
+	context.fillRect(right_track_x, track_y, track_width, track_height);
+	context.strokeStyle = gTankColour;
+	context.fillStyle = gTankColour;
+	var tank_top = tank_mid_y - half_tank_height;
+	context.fillRect(
+		x_center - half_tank_width,
+		tank_top,
+		tank_width,
+		tank_height);
+
+	context.strokeStyle = gCameraColour;
+	context.fillStyle = gCameraColour;
+	var half_camera_width = 6;
+	var camera_width = half_camera_width * 2;
+	var camera_height = camera_width;
+	var camera_bottom = tank_top - tank_space + 2;
+	var camera_mid = camera_bottom - camera_height;
+	var camera_top = camera_mid - camera_height / 2;
+	var camera_left = x_center - half_camera_width;
+	var camera_right = x_center + half_camera_width;
+	context.moveTo(
+		camera_left,
+		camera_bottom);
+	context.lineTo(
+		camera_left,
+		camera_mid);
+	context.lineTo(
+		x_center - half_camera_width / 2,
+		camera_mid);
+	context.lineTo(
+		camera_left,
+		camera_top);
+	context.lineTo(
+		camera_right,
+		camera_top);
+	context.lineTo(
+		x_center + half_camera_width / 2,
+		camera_mid);
+	context.lineTo(
+		camera_right,
+		camera_mid);
+	context.lineTo(
+		camera_right,
+		camera_bottom);
+	context.fill();
 }
-
-
 
 window.addEventListener("gamepadconnected", connecthandler);
 window.addEventListener("gamepaddisconnected", disconnecthandler);
