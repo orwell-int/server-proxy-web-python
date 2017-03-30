@@ -21,7 +21,7 @@ var gFlagWidth = 2 * (gFlagRadius + gHorizontalSpace);
 var gClockThickness = 10;
 var gContourClockAngle;
 var gBatteryCanvasWidth = 200;
-var gBatteryCanvasHeight = 220;
+var gBatteryCanvasHeight = 240;
 var gBatteryColourH = 136;
 var gBatteryColourS = 83;
 var gBatteryColourL = 58;
@@ -30,6 +30,12 @@ var gBatteryColourBadH = 0;
 var gTrackColour = 'rgba(40, 40, 40, 0.5)';
 var gTankColour = 'rgba(70, 70, 70, 0.5)';
 var gCameraColour = 'rgba(0, 0, 0, 0.5)';
+
+var gRadarColourH = 136;
+var gRadarColourS = 83;
+var gRadarColourL = 58;
+var gRadarColour = getHSLA(gRadarColourH, gRadarColourS, gRadarColourL, 0.5);
+var gRadarColourBadH = 0;
 
 String.prototype.replaceAll = function(search, replacement) {
 	var target = this;
@@ -542,6 +548,8 @@ function draw_dual_track_rects(
 }
 
 function draw_battery() {
+	var battery_percentage = 100;
+	var radar_percentage = 100;
 	var canvas = document.getElementById("canvas_battery");
 	var context = canvas.getContext("2d");
 	var offset = 10;
@@ -578,11 +586,10 @@ function draw_battery() {
 		rectangle_y + rectangle_head_offset,
 		rectangle_head_width,
 		rectangle_head_height);
-	var percentage = 100;
-	var ratio = percentage / 100;
-	var proportional_inner_width = inner_rectangle_width * ratio;
+	var battery_ratio = battery_percentage / 100;
+	var proportional_inner_width = inner_rectangle_width * battery_ratio;
 	var hue_length = gBatteryColourH - gBatteryColourBadH;
-	var hue = gBatteryColourH - hue_length * (1 - ratio);
+	var hue = gBatteryColourH - hue_length * (1 - battery_ratio);
 
 	var proportional_colour = getHSLA(hue, gBatteryColourS, gBatteryColourL, 0.5);
 	context.fillStyle = proportional_colour;
@@ -698,6 +705,46 @@ function draw_battery() {
 	context.lineTo(
 		camera_right,
 		camera_bottom);
+	context.fill();
+	var radar_x = x_center;
+	var radar_y = tank_top + tank_height;
+	var transparent_radar = 12;
+	var radar_ratio = radar_percentage / 100;
+	var visible_radar = transparent_radar + 2 + 42 * radar_ratio;
+	hue_length = gRadarColourH - gRadarColourBadH;
+	hue = gRadarColourH - hue_length * (1 - radar_ratio);
+
+	proportional_colour = getHSLA(hue, gRadarColourS, gRadarColourL, 0.5);
+	context.beginPath();
+	context.fillStyle = proportional_colour;
+	context.strokeStyle = proportional_colour;
+	//context.moveTo(
+		//radar_x + transparent_radar,
+		//radar_y + transparent_radar);
+	//context.lineTo(
+		//radar_x + visible_radar,
+		//radar_y + visible_radar);
+	var visible_radius = Math.sqrt(2 * visible_radar * visible_radar)
+	context.arc(
+		radar_x,
+		radar_y,
+		visible_radius,
+		Math.PI / 4,
+		Math.PI * 3 / 4);
+	//context.lineTo(
+		//radar_x - visible_radar,
+		//radar_y + visible_radar);
+	//context.lineTo(
+		//radar_x - transparent_radar,
+		//radar_y + transparent_radar);
+	var transparent_radius = Math.sqrt(2 * transparent_radar * transparent_radar)
+	context.arc(
+		radar_x,
+		radar_y,
+		transparent_radius,
+		Math.PI * 3 / 4,
+		Math.PI / 4,
+		true);
 	context.fill();
 }
 
