@@ -522,6 +522,25 @@ function getHSLA(hue, saturation, lightness, alpha) {
 	return "hsla(" + hue + ", " + saturation + "%, " + lightness + "%, " + alpha + ")";
 }
 
+function draw_dual_track_rects(
+	context,
+	left_track_x,
+	right_track_x,
+	track_y,
+	track_width,
+	track_height) {
+	context.fillRect(
+		left_track_x,
+		track_y,
+		track_width,
+		track_height);
+	context.fillRect(
+		right_track_x,
+		track_y,
+		track_width,
+		track_height);
+}
+
 function draw_battery() {
 	var canvas = document.getElementById("canvas_battery");
 	var context = canvas.getContext("2d");
@@ -589,8 +608,53 @@ function draw_battery() {
 	var tank_mid_y = track_y + track_height / 2;
 	var left_track_x = x_center - half_tank_width - tank_space - track_width;
 	var right_track_x = x_center + half_tank_width + tank_space;
-	context.fillRect(left_track_x, track_y, track_width, track_height);
-	context.fillRect(right_track_x, track_y, track_width, track_height);
+	//context.fillRect(left_track_x, track_y, track_width, track_height);
+	var track_step = 2;
+	var track_space = 1;
+	var track_max = 4;
+	var current_track_y = track_y;
+	var current_track_height = track_step;
+	for (var i = 0 ; i < track_max ; i++) {
+		draw_dual_track_rects(
+			context,
+			left_track_x,
+			right_track_x,
+			current_track_y,
+			track_width,
+			current_track_height);
+		var delta = current_track_y - track_y;
+		draw_dual_track_rects(
+			context,
+			left_track_x,
+			right_track_x,
+			track_y + track_height - delta - current_track_height,
+			track_width,
+			current_track_height);
+		current_track_y += current_track_height + track_space;
+		current_track_height += track_step;
+	}
+	current_track_height -= track_step;
+	for (var i = 0 ; i < 4 ; i++) {
+		draw_dual_track_rects(
+			context,
+			left_track_x,
+			right_track_x,
+			current_track_y,
+			track_width,
+			current_track_height);
+		if (i < 3) {
+			var delta = current_track_y - track_y;
+			draw_dual_track_rects(
+				context,
+				left_track_x,
+				right_track_x,
+				track_y + track_height - delta - current_track_height,
+				track_width,
+				current_track_height);
+				current_track_y += current_track_height + track_space;
+		}
+	}
+	//context.fillRect(right_track_x, track_y, track_width, track_height);
 	context.strokeStyle = gTankColour;
 	context.fillStyle = gTankColour;
 	var tank_top = tank_mid_y - half_tank_height;
