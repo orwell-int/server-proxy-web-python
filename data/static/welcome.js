@@ -21,7 +21,7 @@ var gFlagWidth = 2 * (gFlagRadius + gHorizontalSpace);
 var gClockThickness = 10;
 var gContourClockAngle;
 var gBatteryCanvasWidth = 200;
-var gBatteryCanvasHeight = 240;
+var gBatteryCanvasHeight = 270;
 var gBatteryColourH = 136;
 var gBatteryColourS = 83;
 var gBatteryColourL = 58;
@@ -661,7 +661,6 @@ function draw_battery() {
 				current_track_y += current_track_height + track_space;
 		}
 	}
-	//context.fillRect(right_track_x, track_y, track_width, track_height);
 	context.strokeStyle = gTankColour;
 	context.fillStyle = gTankColour;
 	var tank_top = tank_mid_y - half_tank_height;
@@ -710,7 +709,7 @@ function draw_battery() {
 	var radar_y = tank_top + tank_height;
 	var transparent_radar = 12;
 	var radar_ratio = radar_percentage / 100;
-	var visible_radar = transparent_radar + 2 + 42 * radar_ratio;
+	var visible_radar = transparent_radar + 2 + 62 * radar_ratio;
 	hue_length = gRadarColourH - gRadarColourBadH;
 	hue = gRadarColourH - hue_length * (1 - radar_ratio);
 
@@ -718,32 +717,20 @@ function draw_battery() {
 	context.beginPath();
 	context.fillStyle = proportional_colour;
 	context.strokeStyle = proportional_colour;
-	//context.moveTo(
-		//radar_x + transparent_radar,
-		//radar_y + transparent_radar);
-	//context.lineTo(
-		//radar_x + visible_radar,
-		//radar_y + visible_radar);
 	var visible_radius = Math.sqrt(2 * visible_radar * visible_radar)
 	context.arc(
 		radar_x,
 		radar_y,
 		visible_radius,
-		Math.PI / 4,
-		Math.PI * 3 / 4);
-	//context.lineTo(
-		//radar_x - visible_radar,
-		//radar_y + visible_radar);
-	//context.lineTo(
-		//radar_x - transparent_radar,
-		//radar_y + transparent_radar);
+		Math.PI / 2 - Math.PI / 8,
+		Math.PI / 2 + Math.PI / 8);
 	var transparent_radius = Math.sqrt(2 * transparent_radar * transparent_radar)
 	context.arc(
 		radar_x,
 		radar_y,
 		transparent_radius,
-		Math.PI * 3 / 4,
-		Math.PI / 4,
+		Math.PI / 2 + Math.PI / 8,
+		Math.PI / 2 - Math.PI / 8,
 		true);
 	context.fill();
 }
