@@ -547,6 +547,40 @@ function draw_dual_track_rects(
 		track_height);
 }
 
+function draw_dual_track_rects_mirror(
+	context,
+	left_track_x,
+	right_track_x,
+	track_y,
+	track_width,
+	track_height,
+	mirror_y) {
+	context.fillRect(
+		left_track_x,
+		track_y,
+		track_width,
+		track_height);
+	context.fillRect(
+		right_track_x,
+		track_y,
+		track_width,
+		track_height);
+	var track_center_y = track_y + track_height / 2;
+	var delta = mirror_y - track_center_y;
+	var mirrored_track_center_y = mirror_y + delta;
+	var mirrored_track_y = mirrored_track_center_y - track_height / 2;
+	context.fillRect(
+		left_track_x,
+		mirrored_track_y,
+		track_width,
+		track_height);
+	context.fillRect(
+		right_track_x,
+		mirrored_track_y,
+		track_width,
+		track_height);
+}
+
 function draw_battery() {
 	var battery_percentage = 100;
 	var radar_percentage = 100;
@@ -612,54 +646,67 @@ function draw_battery() {
 	var track_y = rectangle_y + rectangle_height + offset * 2;
 	var track_width = 28;
 	var track_height = 110;
-	var tank_mid_y = track_y + track_height / 2;
+	var half_track_height = track_height / 2;
+	var tank_mid_y = track_y + half_track_height;
 	var left_track_x = x_center - half_tank_width - tank_space - track_width;
 	var right_track_x = x_center + half_tank_width + tank_space;
 	//context.fillRect(left_track_x, track_y, track_width, track_height);
 	var track_step = 2;
 	var track_space = 1;
-	var track_max = 4;
+	var wheel_track_count = 4;
 	var current_track_y = track_y;
 	var current_track_height = track_step;
-	for (var i = 0 ; i < track_max ; i++) {
-		draw_dual_track_rects(
-			context,
-			left_track_x,
-			right_track_x,
-			current_track_y,
-			track_width,
-			current_track_height);
-		var delta = current_track_y - track_y;
-		draw_dual_track_rects(
-			context,
-			left_track_x,
-			right_track_x,
-			track_y + track_height - delta - current_track_height,
-			track_width,
-			current_track_height);
+	for (var i = 0 ; i < wheel_track_count ; i++) {
 		current_track_y += current_track_height + track_space;
 		current_track_height += track_step;
 	}
-	current_track_height -= track_step;
-	for (var i = 0 ; i < 4 ; i++) {
-		draw_dual_track_rects(
+	var max_track_height = current_track_height - track_step;
+	var half_max_track_height = max_track_height / 2;
+	var wheel_track_height = current_track_y - track_y;
+	var half_real_track_height = 0;
+	var straight_track_count = 0;
+	while (half_real_track_height < half_track_height) {
+		straight_track_count += 1;
+		var straight_track_height = straight_track_count * (max_track_height + track_space);
+		half_real_track_height = wheel_track_height + half_max_track_height + straight_track_height;
+	}
+	straight_track_height -= 1;
+	// middle track
+	var current_track_y = tank_mid_y - half_max_track_height;
+	draw_dual_track_rects(
+		context,
+		left_track_x,
+		right_track_x,
+		current_track_y,
+		track_width,
+		max_track_height);
+	// top / bottom tracks
+	for (var i = 0 ; i < straight_track_count ; i++) {
+		current_track_y += max_track_height + track_space;
+		draw_dual_track_rects_mirror(
 			context,
 			left_track_x,
 			right_track_x,
 			current_track_y,
 			track_width,
-			current_track_height);
-		if (i < 3) {
-			var delta = current_track_y - track_y;
-			draw_dual_track_rects(
-				context,
-				left_track_x,
-				right_track_x,
-				track_y + track_height - delta - current_track_height,
-				track_width,
-				current_track_height);
-				current_track_y += current_track_height + track_space;
-		}
+			max_track_height,
+			tank_mid_y);
+	}
+	// top / bottom wheel tracks
+	current_track_y += wheel_track_height;
+	current_track_y += max_track_height + track_space;
+	current_track_height = track_step;
+	for (var i = 0 ; i < wheel_track_count ; i++) {
+		current_track_y -= current_track_height + track_space;
+		draw_dual_track_rects_mirror(
+			context,
+			left_track_x,
+			right_track_x,
+			current_track_y,
+			track_width,
+			current_track_height,
+			tank_mid_y);
+		current_track_height += track_step;
 	}
 	context.strokeStyle = gTankColour;
 	context.fillStyle = gTankColour;
