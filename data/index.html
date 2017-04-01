@@ -155,6 +155,9 @@
 	-webkit-text-stroke-width: 4px;
 	-webkit-text-stroke-color: white;
 }
+.transparent {
+	opacity: 0.5;
+}
 		</style>
 	</head>
 	<body>
@@ -190,7 +193,7 @@
 					<div id="status">{{ status }}</div>
 					<div id="capture_status">{{ capture_status }}</div>
 				</div>
-				<canvas id="canvas_battery" class="bottom_right" width="100" height="100">
+				<canvas id="canvas_battery" class="bottom_right transparent" width="100" height="100">
 				</canvas>
 			</div>
 		</div>

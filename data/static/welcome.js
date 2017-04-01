@@ -15,6 +15,7 @@ var gClockRadius = 45;
 var gContourThickness = 15;
 var gHorizontalSpace = 5;
 var gContourColour = 'rgba(83, 87, 247, 0.5)';
+var gContourColourNoAlpha = 'rgb(83, 87, 247)';
 var gContourMaxHeight_x2 = 2 * (gClockRadius + gContourThickness);
 var gContourMinHeight = (gFlagRadius + gContourThickness);
 var gFlagWidth = 2 * (gFlagRadius + gHorizontalSpace);
@@ -25,17 +26,16 @@ var gBatteryCanvasHeight = 270;
 var gBatteryColourH = 136;
 var gBatteryColourS = 83;
 var gBatteryColourL = 58;
-var gBatteryColour = getHSLA(gBatteryColourH, gBatteryColourS, gBatteryColourL, 0.5);
+var gBatteryColour = getHSL(gBatteryColourH, gBatteryColourS, gBatteryColourL);
 var gBatteryColourBadH = 0;
-var gTrackColour = 'rgba(40, 40, 40, 0.5)';
-var gTankColour = 'rgba(70, 70, 70, 0.5)';
-var gCameraColour = 'rgba(0, 0, 0, 0.5)';
+var gTrackColour = 'rgb(30, 30, 30)';
+var gTankColour = 'rgb(70, 70, 70)';
+var gCameraColour = 'rgb(0, 0, 0)';
 
-var gRadarColourH = 136;
-var gRadarColourS = 83;
-var gRadarColourL = 58;
-var gRadarColour = getHSLA(gRadarColourH, gRadarColourS, gRadarColourL, 0.5);
-var gRadarColourBadH = 0;
+var gRadarColourH = gBatteryColourH;
+var gRadarColourS = gBatteryColourS;
+var gRadarColourL = gBatteryColourL;
+var gRadarColourBadH = gBatteryColourBadH
 
 String.prototype.replaceAll = function(search, replacement) {
 	var target = this;
@@ -524,6 +524,10 @@ function draw_flag_canvas_team() {
 	context.fillRect(offset + offset, offset + offset, width - 2 * offset, height - 2 * offset);
 }
 
+function getHSL(hue, saturation, lightness) {
+	return "hsl(" + hue + ", " + saturation + "%, " + lightness + "%)";
+}
+
 function getHSLA(hue, saturation, lightness, alpha) {
 	return "hsla(" + hue + ", " + saturation + "%, " + lightness + "%, " + alpha + ")";
 }
@@ -592,8 +596,8 @@ function draw_battery() {
 	canvas.setAttribute("height", gBatteryCanvasHeight)
 	var width = gBatteryCanvasWidth - offset * 2;
 	var height = gBatteryCanvasHeight - offset * 2;
-	context.fillStyle = gContourColour;
-	context.strokeStyle = gContourColour;
+	context.fillStyle = gContourColourNoAlpha;
+	context.strokeStyle = gContourColourNoAlpha;
 	context.lineJoin = "round";
 	context.lineWidth = offset * 2;
 	context.beginPath();
@@ -620,12 +624,13 @@ function draw_battery() {
 		rectangle_y + rectangle_head_offset,
 		rectangle_head_width,
 		rectangle_head_height);
+	context.lineJoin = "miter";
 	var battery_ratio = battery_percentage / 100;
 	var proportional_inner_width = inner_rectangle_width * battery_ratio;
 	var hue_length = gBatteryColourH - gBatteryColourBadH;
 	var hue = gBatteryColourH - hue_length * (1 - battery_ratio);
 
-	var proportional_colour = getHSLA(hue, gBatteryColourS, gBatteryColourL, 0.5);
+	var proportional_colour = getHSL(hue, gBatteryColourS, gBatteryColourL);
 	context.fillStyle = proportional_colour;
 	context.strokeStyle = proportional_colour;
 	context.fillRect(
@@ -760,7 +765,7 @@ function draw_battery() {
 	hue_length = gRadarColourH - gRadarColourBadH;
 	hue = gRadarColourH - hue_length * (1 - radar_ratio);
 
-	proportional_colour = getHSLA(hue, gRadarColourS, gRadarColourL, 0.5);
+	proportional_colour = getHSL(hue, gRadarColourS, gRadarColourL);
 	context.beginPath();
 	context.fillStyle = proportional_colour;
 	context.strokeStyle = proportional_colour;
