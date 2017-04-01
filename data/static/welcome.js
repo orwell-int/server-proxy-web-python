@@ -30,6 +30,7 @@ var gBatteryColour = getHSL(gBatteryColourH, gBatteryColourS, gBatteryColourL);
 var gBatteryColourBadH = 0;
 var gTrackColour = 'rgb(30, 30, 30)';
 var gTankColour = 'rgb(70, 70, 70)';
+var gLCDColour = 'rgb(120, 120, 120)';
 var gCameraColour = 'rgb(0, 0, 0)';
 
 var gRadarColourH = gBatteryColourH;
@@ -721,6 +722,17 @@ function draw_battery() {
 		tank_top,
 		tank_width,
 		tank_height);
+
+	context.strokeStyle = gLCDColour;
+	context.fillStyle = gLCDColour;
+	var lcd_space = 5;
+	var lcd_top = tank_top + lcd_space;
+	var lcd_height = 24;
+	context.fillRect(
+		x_center - half_tank_width + lcd_space,
+		lcd_top,
+		tank_width - 2 * lcd_space,
+		lcd_height);
 
 	context.strokeStyle = gCameraColour;
 	context.fillStyle = gCameraColour;
