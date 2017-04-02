@@ -28,10 +28,10 @@ var gBatteryColourS = 83;
 var gBatteryColourL = 58;
 var gBatteryColour = getHSL(gBatteryColourH, gBatteryColourS, gBatteryColourL);
 var gBatteryColourBadH = 0;
-var gTrackColour = 'rgb(30, 30, 30)';
-var gTankColour = 'rgb(70, 70, 70)';
-var gLCDColour = 'rgb(120, 120, 120)';
-var gCameraColour = 'rgb(0, 0, 0)';
+var gTrackColour = 'rgba(30, 30, 30, 0.6)';
+var gTankColour = 'rgba(70, 70, 70, 0.6)';
+var gLCDColour = 'rgba(120, 120, 120, 0.6)';
+var gCameraColour = 'rgba(0, 0, 0, 0.6)';
 
 var gRadarColourH = gBatteryColourH;
 var gRadarColourS = gBatteryColourS;
@@ -48,7 +48,8 @@ $( document ).ready(
 	{
 		console.log("document / ready");
 		draw_flag_canvas_team();
-		draw_battery();
+		draw_battery(90, 70);
+		draw_canvas_fullscreen();
 		console.log("Pi / 4 = " + (Math.PI / 4));
 		var arcsin = gContourMinHeight / (gClockRadius + gContourThickness);
 		console.log("arcsin = " + arcsin);
@@ -65,19 +66,9 @@ $( document ).ready(
 			obj = JSON.parse(e.data);
 			if ("new_items" in obj) {
 				console.log('Received: ' + e.data);
-				var list = document.getElementById("items");
 				var flags = document.getElementById("flags");
 				for (var i = 0; i < obj.new_items.length; i++) {
-					//var is_last = (i + 1 == obj.new_items.length)
 					name = obj.new_items[i];
-					identifier = "item " + name;
-					if (null == document.getElementById(identifier) ) {
-						console.log('add item with name "' + name + '"');
-						var entry = document.createElement('li');
-						entry.appendChild(document.createTextNode(name));
-						entry.id = identifier;
-						list.appendChild(entry);
-					}
 					var flag_id = "flag_" + name;
 					var flag = document.getElementById(flag_id);
 					if (null == flag) {
@@ -103,7 +94,6 @@ $( document ).ready(
 				}
 			}
 			if ("items" in obj) {
-				var list = document.getElementById("items");
 				for (var i = 0; i < obj.items.length; i++) {
 					item = obj.items[i];
 					identifier = "item " + item.name;
@@ -131,12 +121,6 @@ $( document ).ready(
 						}
 					}
 				}
-			}
-			if ("capture_status" in obj) {
-				document.getElementById("capture_status").innerHTML = obj.capture_status;
-			}
-			if ("status" in obj) {
-				document.getElementById("status").innerHTML = obj.status;
 			}
 			if ("winner" in obj) {
 				if (obj.winner == gTeam) {
@@ -586,9 +570,7 @@ function draw_dual_track_rects_mirror(
 		track_height);
 }
 
-function draw_battery() {
-	var battery_percentage = 100;
-	var radar_percentage = 100;
+function draw_battery(battery_percentage, radar_percentage) {
 	var canvas = document.getElementById("canvas_battery");
 	var context = canvas.getContext("2d");
 	var offset = 10;
@@ -597,8 +579,8 @@ function draw_battery() {
 	canvas.setAttribute("height", gBatteryCanvasHeight)
 	var width = gBatteryCanvasWidth - offset * 2;
 	var height = gBatteryCanvasHeight - offset * 2;
-	context.fillStyle = gContourColourNoAlpha;
-	context.strokeStyle = gContourColourNoAlpha;
+	context.fillStyle = gContourColour;
+	context.strokeStyle = gContourColour;
 	context.lineJoin = "round";
 	context.lineWidth = offset * 2;
 	context.beginPath();
@@ -797,6 +779,48 @@ function draw_battery() {
 		Math.PI / 2 - Math.PI / 8,
 		true);
 	context.fill();
+}
+
+function draw_canvas_fullscreen() {
+	var width = 30;
+	var height = 30;
+	var offset = 4;
+	var canvas = document.getElementById("canvas_fullscreen");
+	canvas.setAttribute("width", width);
+	canvas.setAttribute("height", height);
+	var inner_width = width - 2 * offset;
+	var inner_height = height - 2 * offset;;
+	var context = canvas.getContext("2d");
+	context.fillStyle = gContourColourNoAlpha;
+	context.strokeStyle = gContourColourNoAlpha;
+	context.lineJoin = "round";
+	context.lineWidth = offset * 2;
+	context.beginPath();
+	context.strokeRect(offset, offset, inner_width, inner_height);
+	context.fillRect(offset + offset, offset + offset, inner_width - 2 * offset, inner_height - 2 * offset);
+	context.lineJoin = "miter";
+	context.strokeStyle = "black";
+	context.lineWidth = 2;
+	context.beginPath();
+	var length = 6;
+	var space = 6;
+	// top left
+	context.moveTo(space + length, space);
+	context.lineTo(space, space);
+	context.lineTo(space, space + length);
+	// top right
+	context.moveTo(width - space - length, space);
+	context.lineTo(width - space, space);
+	context.lineTo(width - space, space + length);
+	// bottom left
+	context.moveTo(space + length, height - space);
+	context.lineTo(space, height - space);
+	context.lineTo(space, height - space - length);
+	// bottom right
+	context.moveTo(width - space - length, height - space);
+	context.lineTo(width - space, height - space);
+	context.lineTo(width - space, height - space - length);
+	context.stroke();
 }
 
 window.addEventListener("gamepadconnected", connecthandler);
