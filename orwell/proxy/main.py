@@ -1,5 +1,6 @@
 """Web site."""
 from __future__ import print_function
+from __future__ import division
 
 
 import argparse
@@ -10,6 +11,7 @@ import socket
 import struct
 import random
 import json
+import math
 
 import zmq
 from zmq.eventloop import ioloop
@@ -227,10 +229,32 @@ class MainHandler(tornado.web.RequestHandler):
 
     def _handle_player_state(self, payload):
         # WIP
+        print("_handle_player_state")
         message = pb_server_game.PlayerState()
         message.ParseFromString(payload)
-        if (not message.HasField("item")):
-            return
+        dico = {}
+        if (message.HasField("ultrasound")):
+            l2 = 1
+            div = 2
+            ultrasound = math.log(1 + message.ultrasound.distance / div) / l2
+            min_ultrasound = math.log(1 + 0 / div) / l2
+            max_ultrasound = math.log(1 + 255 / div) / l2
+            range_ultrasound = max_ultrasound - min_ultrasound
+            delta = max(0, ultrasound - min_ultrasound)
+            percentage = delta / range_ultrasound * 100
+            dico["ultrasound"] = min(100, percentage)
+        if (message.HasField("battery")):
+            battery = message.battery.voltage_millivolt
+            min_battery = 6500
+            max_battery = 8400
+            range_battery = max_battery - min_battery
+            delta = max(0, battery - min_battery)
+            percentage = delta / range_battery * 100
+            dico["battery"] = min(100, percentage)
+
+        print("PlayerState:" + str(dico))
+        for connection in OrwellConnection.all_connections:
+            connection.send(json.dumps(dico))
 
     def _build_hello(self, ready):
         pb_message = pb_controller.Hello()

@@ -38,6 +38,9 @@ var gRadarColourS = gBatteryColourS;
 var gRadarColourL = gBatteryColourL;
 var gRadarColourBadH = gBatteryColourBadH
 
+var gBattery = 0;
+var gUltrasound = 0;
+
 String.prototype.replaceAll = function(search, replacement) {
 	var target = this;
 	return target.replace(new RegExp(search, 'g'), replacement);
@@ -48,7 +51,7 @@ $( document ).ready(
 	{
 		console.log("document / ready");
 		draw_flag_canvas_team();
-		draw_battery(90, 70);
+		draw_battery(gBattery, gUltrasound);
 		draw_canvas_fullscreen();
 		console.log("Pi / 4 = " + (Math.PI / 4));
 		var arcsin = gContourMinHeight / (gClockRadius + gContourThickness);
@@ -64,6 +67,7 @@ $( document ).ready(
 		};
 		gConn.onmessage = function(e) {
 			obj = JSON.parse(e.data);
+			update_battery = false;
 			if ("new_items" in obj) {
 				console.log('Received: ' + e.data);
 				var flags = document.getElementById("flags");
@@ -97,12 +101,6 @@ $( document ).ready(
 				for (var i = 0; i < obj.items.length; i++) {
 					item = obj.items[i];
 					identifier = "item " + item.name;
-					node_item = document.getElementById(identifier);
-					if (null == node_item) {
-						console.log("Error for item number " + i + " with id '" + identifier + "'.");
-					} else {
-						node_item.innerHTML = item.status
-					}
 					var flag_id = "flag_" + item.name;
 					var flag_text_id = flag_id + "_text";
 					var flag_text = document.getElementById(flag_text_id);
@@ -146,6 +144,17 @@ $( document ).ready(
 				} else {
 					start_button.style.top = '50%';
 				}
+			}
+			if ("battery" in obj) {
+				update_battery = true;
+				gBattery = obj.battery;
+			}
+			if ("ultrasound" in obj) {
+				update_ultrasound = true;
+				gUltrasound = obj.ultrasound;
+			}
+			if (update_battery) {
+				draw_battery(gBattery, gUltrasound);
 			}
 			var running = true;
 			if ("running" in obj) {
@@ -583,13 +592,8 @@ function draw_battery(battery_percentage, radar_percentage) {
 	context.strokeStyle = gContourColour;
 	context.lineJoin = "round";
 	context.lineWidth = offset * 2;
-	context.beginPath();
-	context.strokeRect(offset, offset, width, height);
-	context.fillRect(offset + offset, offset + offset, width - 2 * offset, height - 2 * offset);
-	context.fillStyle = gBatteryColour;
-	context.strokeStyle = gBatteryColour;
+
 	var line_width = 2;
-	context.lineWidth = line_width;
 	var rectangle_y = offset * 2;
 	var rectangle_width = 50;
 	var rectangle_x = (gBatteryCanvasWidth - rectangle_width) / 2;
@@ -601,19 +605,28 @@ function draw_battery(battery_percentage, radar_percentage) {
 	var inner_rectangle_y = rectangle_y + line_width / 2;
 	var inner_rectangle_width = rectangle_width - line_width;
 	var inner_rectangle_height = rectangle_height - line_width;
-	context.strokeRect(rectangle_x, rectangle_y, rectangle_width, rectangle_height);
-	context.fillRect(
-		rectangle_x + rectangle_width + line_width / 2,
-		rectangle_y + rectangle_head_offset,
-		rectangle_head_width,
-		rectangle_head_height);
-	context.lineJoin = "miter";
 	var battery_ratio = battery_percentage / 100;
 	var proportional_inner_width = inner_rectangle_width * battery_ratio;
 	var hue_length = gBatteryColourH - gBatteryColourBadH;
 	var hue = gBatteryColourH - hue_length * (1 - battery_ratio);
 
 	var proportional_colour = getHSL(hue, gBatteryColourS, gBatteryColourL);
+	context.beginPath();
+	context.strokeRect(offset, offset, width, height);
+	context.fillRect(offset + offset, offset + offset, width - 2 * offset, height - 2 * offset);
+	//context.fillStyle = gBatteryColour;
+	//context.strokeStyle = gBatteryColour;
+	// use the same colour as the inside
+	context.fillStyle = proportional_colour;
+	context.strokeStyle = proportional_colour;
+	context.lineWidth = line_width;
+	context.lineJoin = "miter";
+	context.strokeRect(rectangle_x, rectangle_y, rectangle_width, rectangle_height);
+	context.fillRect(
+		rectangle_x + rectangle_width + line_width / 2,
+		rectangle_y + rectangle_head_offset,
+		rectangle_head_width,
+		rectangle_head_height);
 	context.fillStyle = proportional_colour;
 	context.strokeStyle = proportional_colour;
 	context.fillRect(
