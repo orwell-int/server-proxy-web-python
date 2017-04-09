@@ -224,7 +224,7 @@ class MainHandler(tornado.web.RequestHandler):
             index, _, joystick_type = info.partition(' ')
             index = int(index)
             self._joysticks[index] = orwell.proxy.input.Joystick(
-                0.2,
+                0.05,
                 joystick_type)
         elif (data.startswith(MainHandler.JOYSTICK_PREFIX)):
             info = data[len(MainHandler.JOYSTICK_PREFIX):]

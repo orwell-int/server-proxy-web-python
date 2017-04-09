@@ -28,7 +28,7 @@ class Joystick(object):
             dead_zone,
             joystick_type,
             angle=math.pi * 0.25,
-            precision=0.05):
+            precision=0.025):
         assert(Joystick.ANGLE_MIN < angle < Joystick.ANGLE_MAX)
         self._dead_zone = dead_zone
         self._joystick_type = JoystickType.build(joystick_type)
