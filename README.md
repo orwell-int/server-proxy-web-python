@@ -1,4 +1,5 @@
-agent-server-game-python
+server-proxy-web-python
 ========================
 
-Agent to communicate with the game server implemented in python.
+Server to serve pages to the web client and relay the video in the Orwell project.
+It basically is the gateway between server-game and the client browser.
