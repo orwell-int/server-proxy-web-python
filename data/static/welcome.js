@@ -51,6 +51,9 @@ $( document ).ready(
 			if ("videofeed" in obj) {
 				document.getElementById("videofeed").setAttribute("src", obj.videofeed);
 			}
+			if ("start_button" in obj) {
+				document.getElementById("start_button").innerHTML = obj.start_button;
+			}
 		};
 		gConn.onclose = function() {
 			console.log('Disconnected.');
@@ -281,6 +284,10 @@ function scangamepads() {
 			}
 		}
 	}
+}
+
+function start() {
+	callServer("START")
 }
 
 

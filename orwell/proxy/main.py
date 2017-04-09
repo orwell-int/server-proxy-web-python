@@ -63,6 +63,7 @@ class MainHandler(tornado.web.RequestHandler):
         self._last_fire_weapon1 = None
         self._last_fire_weapon2 = None
         self._items = set()
+        self._running = False
 
     @tornado.web.asynchronous
     def get(self):
@@ -71,7 +72,7 @@ class MainHandler(tornado.web.RequestHandler):
                 status="well let's say pending",
                 capture_status="")
         self.write(content)
-        hello = self._build_hello()
+        hello = self._build_hello(False)
         print("Send Hello: " + repr(hello))
         # self._subscribe_stream.send(hello)
         self._push_stream.send(hello)
@@ -111,6 +112,7 @@ class MainHandler(tornado.web.RequestHandler):
         if (message.game_state):
             print("playing ? " + str(message.game_state.playing))
             print("time left: " + str(message.game_state.seconds))
+            self._update_running(message.game_state.playing)
             for team in message.game_state.teams:
                 print(team.name + " (" + str(team.num_players) +
                       ") -> " + str(team.score))
@@ -145,7 +147,9 @@ class MainHandler(tornado.web.RequestHandler):
             message.ParseFromString(payload)
             if (message.HasField("winner")):
                 status = "Game won by team " + message.winner
+                self._update_running(False)
             else:
+                self._update_running(message.playing)
                 if (message.playing):
                     status = "Game running"
                     if (message.HasField("seconds")):
@@ -178,6 +182,18 @@ class MainHandler(tornado.web.RequestHandler):
             if (not sent):
                 print("message not sent")
 
+    def _start_button_update(self, text):
+        if (OrwellConnection.all_connections):
+            dico = {"start_button": text}
+            sent = False
+            for connection in OrwellConnection.all_connections:
+                connection.send(json.dumps(dico))
+                sent = True
+            if (sent):
+                print("message sent - start_button: " + text)
+            if (not sent):
+                print("message NOT sent - start_button: " + text)
+
     def _handle_player_state(self, payload):
         # WIP
         message = pb_server_game.PlayerState()
@@ -190,12 +206,21 @@ class MainHandler(tornado.web.RequestHandler):
         for connection in OrwellConnection.all_connections:
             connection.send(json.dumps({"capture_status": capture_status}))
 
-    def _build_hello(self):
+    def _build_hello(self, ready):
         pb_message = pb_controller.Hello()
         name = "JAMBON"
         pb_message.name = name
+        pb_message.ready = ready
         payload = pb_message.SerializeToString()
         return self._routing_id + ' Hello ' + payload
+
+    def _update_running(self, new_running):
+        if (self._running != new_running):
+            self._running = new_running
+            if (self._running):
+                self._start_button_update("Restart")
+            else:
+                self._start_button_update("Start")
 
     def send_input(self, data):
         factor = 0.5
@@ -203,7 +228,11 @@ class MainHandler(tornado.web.RequestHandler):
         right = 0
         fire_weapon1 = False
         fire_weapon2 = False
-        if ("LEFT" == data):
+        if ("START" == data):
+            hello = self._build_hello(True)
+            print("Send Hello: " + repr(hello))
+            self._push_stream.send(hello)
+        elif ("LEFT" == data):
             left = -1 * factor
             right = 1 * factor
         elif ("FORWARD" == data):
