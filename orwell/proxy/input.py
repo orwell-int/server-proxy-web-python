@@ -100,7 +100,7 @@ class Joystick(object):
     def _toggle_direction(self):
         self._invert_direction = -self._invert_direction
 
-    def _convert(self, x, y, factor):
+    def _convert2(self, x, y, factor):
         cosine = math.cos(self._angle)
         sine = math.sin(self._angle)
         self.left = self._round(factor * (
@@ -109,3 +109,24 @@ class Joystick(object):
         self.right = self._round(factor * (
                 y * cosine -
                 x * sine))
+
+    def _convert(self, x, y, factor):
+        cosine = math.cos(self._angle)
+        sine = math.sin(self._angle)
+        scale = (cosine + sine) * 0.5
+        # print("x =", x, "; y =", y, "; factor =", factor)
+        # print("cosine =", cosine, "; sine =", sine, "; scale =", scale)
+        # print("x * cosine =", x * cosine, "; y * sine =", sine)
+        big_left = self._round(factor * (
+            x * cosine +
+            y * sine) / scale)
+        big_right = self._round(factor * (
+            y * cosine -
+            x * sine) / scale)
+        # print("big_left =", big_left, "; big_right =", big_right)
+        self.left = max(-1, min(
+                1,
+                big_left))
+        self.right = max(-1, min(
+                1,
+                big_right))
