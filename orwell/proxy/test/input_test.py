@@ -8,7 +8,7 @@ import sys
 class InputTest(unittest.TestCase):
     _factor = 1.0
     _joystick = Joystick(0.01, "T.Flight Hotas X")
-    _logger = logging.getLogger("SomeTest.testSomething")
+    _logger = logging.getLogger("input_test")
 
     def test1(self):
         self._helper(0, 1, 1, 1)
@@ -37,7 +37,7 @@ class InputTest(unittest.TestCase):
 
 if ("__main__" == __name__):
     logging.basicConfig(stream=sys.stderr)
-    logging.getLogger("SomeTest.testSomething").setLevel(logging.DEBUG)
-    logger = logging.getLogger("SomeTest.testSomething")
+    logging.getLogger("input_test").setLevel(logging.DEBUG)
+    logger = logging.getLogger("input_test")
     logger.debug("start")
     unittest.main()
