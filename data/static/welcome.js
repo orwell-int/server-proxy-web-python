@@ -3,6 +3,8 @@ gLastEvent["KEYBOARD"] = ""
 var gConn = null;
 var gFullScreen = false;
 var gFlagColours = {}
+var gTeam = "A"
+var gLastSeconds = 0
 gFlagColours["blue"] = "rgb(10, 81, 255)"
 gFlagColours["green"] = "rgb(3, 232, 107)"
 gFlagColours["yellow"] = "rgb(255, 251, 14)"
@@ -13,11 +15,31 @@ var gClockRadius = 45;
 var gContourThickness = 15;
 var gHorizontalSpace = 5;
 var gContourColour = 'rgba(83, 87, 247, 0.5)';
+var gContourColourNoAlpha = 'rgb(83, 87, 247)';
 var gContourMaxHeight_x2 = 2 * (gClockRadius + gContourThickness);
 var gContourMinHeight = (gFlagRadius + gContourThickness);
 var gFlagWidth = 2 * (gFlagRadius + gHorizontalSpace);
 var gClockThickness = 10;
 var gContourClockAngle;
+var gBatteryCanvasWidth = 200;
+var gBatteryCanvasHeight = 270;
+var gBatteryColourH = 136;
+var gBatteryColourS = 83;
+var gBatteryColourL = 58;
+var gBatteryColour = getHSL(gBatteryColourH, gBatteryColourS, gBatteryColourL);
+var gBatteryColourBadH = 0;
+var gTrackColour = 'rgba(30, 30, 30, 0.6)';
+var gTankColour = 'rgba(70, 70, 70, 0.6)';
+var gLCDColour = 'rgba(120, 120, 120, 0.6)';
+var gCameraColour = 'rgba(0, 0, 0, 0.6)';
+
+var gRadarColourH = gBatteryColourH;
+var gRadarColourS = gBatteryColourS;
+var gRadarColourL = gBatteryColourL;
+var gRadarColourBadH = gBatteryColourBadH
+
+var gBattery = 0;
+var gUltrasound = 0;
 
 String.prototype.replaceAll = function(search, replacement) {
 	var target = this;
@@ -29,6 +51,8 @@ $( document ).ready(
 	{
 		console.log("document / ready");
 		draw_flag_canvas_team();
+		draw_battery(gBattery, gUltrasound);
+		draw_canvas_fullscreen();
 		console.log("Pi / 4 = " + (Math.PI / 4));
 		var arcsin = gContourMinHeight / (gClockRadius + gContourThickness);
 		console.log("arcsin = " + arcsin);
@@ -37,26 +61,18 @@ $( document ).ready(
 		console.log("open SockJS connection")
 		gConn = new SockJS('//' + window.location.host + '/orwell');
 		console.log("gConn = " + gConn)
+		document.getElementById("team").innerHTML += " " + gTeam;
 		gConn.onopen = function() {
 			console.log('Connected.');
 		};
 		gConn.onmessage = function(e) {
 			obj = JSON.parse(e.data);
+			update_battery = false;
 			if ("new_items" in obj) {
 				console.log('Received: ' + e.data);
-				var list = document.getElementById("items");
 				var flags = document.getElementById("flags");
 				for (var i = 0; i < obj.new_items.length; i++) {
-					//var is_last = (i + 1 == obj.new_items.length)
 					name = obj.new_items[i];
-					identifier = "item " + name;
-					if (null == document.getElementById(identifier) ) {
-						console.log('add item with name "' + name + '"');
-						var entry = document.createElement('li');
-						entry.appendChild(document.createTextNode(name));
-						entry.id = identifier;
-						list.appendChild(entry);
-					}
 					var flag_id = "flag_" + name;
 					var flag = document.getElementById(flag_id);
 					if (null == flag) {
@@ -82,16 +98,9 @@ $( document ).ready(
 				}
 			}
 			if ("items" in obj) {
-				var list = document.getElementById("items");
 				for (var i = 0; i < obj.items.length; i++) {
 					item = obj.items[i];
 					identifier = "item " + item.name;
-					node_item = document.getElementById(identifier);
-					if (null == node_item) {
-						console.log("Error for item number " + i + " with id '" + identifier + "'.");
-					} else {
-						node_item.innerHTML = item.status
-					}
 					var flag_id = "flag_" + item.name;
 					var flag_text_id = flag_id + "_text";
 					var flag_text = document.getElementById(flag_text_id);
@@ -111,11 +120,16 @@ $( document ).ready(
 					}
 				}
 			}
-			if ("capture_status" in obj) {
-				document.getElementById("capture_status").innerHTML = obj.capture_status;
-			}
-			if ("status" in obj) {
-				document.getElementById("status").innerHTML = obj.status;
+			if ("winner" in obj) {
+				if (obj.winner == gTeam) {
+					document.getElementById("end_game").innerHTML = "Victory (" + gLastSeconds + "s)";
+				} else if (obj.winner == "-") {
+					document.getElementById("end_game").innerHTML = "Draw";
+				} else if (obj.winner == "") {
+					document.getElementById("end_game").innerHTML = "";
+				} else {
+					document.getElementById("end_game").innerHTML = "Defeat";
+				}
 			}
 			if ("videofeed" in obj) {
 				document.getElementById("videofeed").setAttribute("src", obj.videofeed);
@@ -131,6 +145,17 @@ $( document ).ready(
 					start_button.style.top = '50%';
 				}
 			}
+			if ("battery" in obj) {
+				update_battery = true;
+				gBattery = obj.battery;
+			}
+			if ("ultrasound" in obj) {
+				update_ultrasound = true;
+				gUltrasound = obj.ultrasound;
+			}
+			if (update_battery) {
+				draw_battery(gBattery, gUltrasound);
+			}
 			var running = true;
 			if ("running" in obj) {
 				running = obj.running;
@@ -140,6 +165,7 @@ $( document ).ready(
 					var seconds = obj.seconds;
 					var total_seconds = obj.total_seconds;
 					drawPie(total_seconds, seconds);
+					gLastSeconds = total_seconds - seconds;
 				}
 			} else {
 				drawPie(1, 0);
@@ -471,11 +497,11 @@ function draw_flag_canvas_team() {
 	var offset = 10;
 	var height = team_rect.height + offset * 2;
 	var width = team_rect.width + 20 + offset * 2;
-	var bottom_right = document.getElementById("bottom_right_inner");
+	var top_left = document.getElementById("top_left_inner");
 	// this is horrible
-	bottom_right.setAttribute(
+	top_left.setAttribute(
 		"style",
-		bottom_right.getAttribute("style") + ";height:" + height + ";width:" + width);
+		top_left.getAttribute("style") + ";height:" + height + ";width:" + width);
 	console.log("new height = " + height);
 	console.log("new width = " + width);
 	canvas.height = height;
@@ -490,6 +516,324 @@ function draw_flag_canvas_team() {
 	context.beginPath();
 	context.strokeRect(offset, offset, width, height);
 	context.fillRect(offset + offset, offset + offset, width - 2 * offset, height - 2 * offset);
+}
+
+function getHSL(hue, saturation, lightness) {
+	return "hsl(" + hue + ", " + saturation + "%, " + lightness + "%)";
+}
+
+function getHSLA(hue, saturation, lightness, alpha) {
+	return "hsla(" + hue + ", " + saturation + "%, " + lightness + "%, " + alpha + ")";
+}
+
+function draw_dual_track_rects(
+	context,
+	left_track_x,
+	right_track_x,
+	track_y,
+	track_width,
+	track_height) {
+	context.fillRect(
+		left_track_x,
+		track_y,
+		track_width,
+		track_height);
+	context.fillRect(
+		right_track_x,
+		track_y,
+		track_width,
+		track_height);
+}
+
+function draw_dual_track_rects_mirror(
+	context,
+	left_track_x,
+	right_track_x,
+	track_y,
+	track_width,
+	track_height,
+	mirror_y) {
+	context.fillRect(
+		left_track_x,
+		track_y,
+		track_width,
+		track_height);
+	context.fillRect(
+		right_track_x,
+		track_y,
+		track_width,
+		track_height);
+	var track_center_y = track_y + track_height / 2;
+	var delta = mirror_y - track_center_y;
+	var mirrored_track_center_y = mirror_y + delta;
+	var mirrored_track_y = mirrored_track_center_y - track_height / 2;
+	context.fillRect(
+		left_track_x,
+		mirrored_track_y,
+		track_width,
+		track_height);
+	context.fillRect(
+		right_track_x,
+		mirrored_track_y,
+		track_width,
+		track_height);
+}
+
+function draw_battery(battery_percentage, radar_percentage) {
+	var canvas = document.getElementById("canvas_battery");
+	var context = canvas.getContext("2d");
+	var offset = 10;
+	var x_center = gBatteryCanvasWidth / 2;
+	canvas.setAttribute("width", gBatteryCanvasWidth)
+	canvas.setAttribute("height", gBatteryCanvasHeight)
+	var width = gBatteryCanvasWidth - offset * 2;
+	var height = gBatteryCanvasHeight - offset * 2;
+	context.fillStyle = gContourColour;
+	context.strokeStyle = gContourColour;
+	context.lineJoin = "round";
+	context.lineWidth = offset * 2;
+
+	var line_width = 2;
+	var rectangle_y = offset * 2;
+	var rectangle_width = 50;
+	var rectangle_x = (gBatteryCanvasWidth - rectangle_width) / 2;
+	var rectangle_height = 20;
+	var rectangle_head_width = 5;
+	var rectangle_head_height = 10;
+	var rectangle_head_offset = (rectangle_height - rectangle_head_height) / 2;
+	var inner_rectangle_x = rectangle_x + line_width / 2;
+	var inner_rectangle_y = rectangle_y + line_width / 2;
+	var inner_rectangle_width = rectangle_width - line_width;
+	var inner_rectangle_height = rectangle_height - line_width;
+	var battery_ratio = battery_percentage / 100;
+	var proportional_inner_width = inner_rectangle_width * battery_ratio;
+	var hue_length = gBatteryColourH - gBatteryColourBadH;
+	var hue = gBatteryColourH - hue_length * (1 - battery_ratio);
+
+	var proportional_colour = getHSL(hue, gBatteryColourS, gBatteryColourL);
+	context.beginPath();
+	context.strokeRect(offset, offset, width, height);
+	context.fillRect(offset + offset, offset + offset, width - 2 * offset, height - 2 * offset);
+	//context.fillStyle = gBatteryColour;
+	//context.strokeStyle = gBatteryColour;
+	// use the same colour as the inside
+	context.fillStyle = proportional_colour;
+	context.strokeStyle = proportional_colour;
+	context.lineWidth = line_width;
+	context.lineJoin = "miter";
+	context.strokeRect(rectangle_x, rectangle_y, rectangle_width, rectangle_height);
+	context.fillRect(
+		rectangle_x + rectangle_width + line_width / 2,
+		rectangle_y + rectangle_head_offset,
+		rectangle_head_width,
+		rectangle_head_height);
+	context.fillStyle = proportional_colour;
+	context.strokeStyle = proportional_colour;
+	context.fillRect(
+		inner_rectangle_x,
+		inner_rectangle_y,
+		proportional_inner_width,
+		inner_rectangle_height);
+
+	context.fillStyle = gTrackColour;
+	context.strokeStyle = gTrackColour;
+	context.lineWidth = 1;
+
+	var half_tank_width = 22;
+	var tank_width = half_tank_width * 2;
+	var half_tank_height = 33;
+	var tank_height = half_tank_height * 2;
+	var tank_space = 4;
+	var track_y = rectangle_y + rectangle_height + offset * 2;
+	var track_width = 28;
+	var track_height = 110;
+	var half_track_height = track_height / 2;
+	var tank_mid_y = track_y + half_track_height;
+	var left_track_x = x_center - half_tank_width - tank_space - track_width;
+	var right_track_x = x_center + half_tank_width + tank_space;
+	//context.fillRect(left_track_x, track_y, track_width, track_height);
+	var track_step = 2;
+	var track_space = 1;
+	var wheel_track_count = 4;
+	var current_track_y = track_y;
+	var current_track_height = track_step;
+	for (var i = 0 ; i < wheel_track_count ; i++) {
+		current_track_y += current_track_height + track_space;
+		current_track_height += track_step;
+	}
+	var max_track_height = current_track_height - track_step;
+	var half_max_track_height = max_track_height / 2;
+	var wheel_track_height = current_track_y - track_y;
+	var half_real_track_height = 0;
+	var straight_track_count = 0;
+	while (half_real_track_height < half_track_height) {
+		straight_track_count += 1;
+		var straight_track_height = straight_track_count * (max_track_height + track_space);
+		half_real_track_height = wheel_track_height + half_max_track_height + straight_track_height;
+	}
+	straight_track_height -= 1;
+	// middle track
+	var current_track_y = tank_mid_y - half_max_track_height;
+	draw_dual_track_rects(
+		context,
+		left_track_x,
+		right_track_x,
+		current_track_y,
+		track_width,
+		max_track_height);
+	// top / bottom tracks
+	for (var i = 0 ; i < straight_track_count ; i++) {
+		current_track_y += max_track_height + track_space;
+		draw_dual_track_rects_mirror(
+			context,
+			left_track_x,
+			right_track_x,
+			current_track_y,
+			track_width,
+			max_track_height,
+			tank_mid_y);
+	}
+	// top / bottom wheel tracks
+	current_track_y += wheel_track_height;
+	current_track_y += max_track_height + track_space;
+	current_track_height = track_step;
+	for (var i = 0 ; i < wheel_track_count ; i++) {
+		current_track_y -= current_track_height + track_space;
+		draw_dual_track_rects_mirror(
+			context,
+			left_track_x,
+			right_track_x,
+			current_track_y,
+			track_width,
+			current_track_height,
+			tank_mid_y);
+		current_track_height += track_step;
+	}
+	context.strokeStyle = gTankColour;
+	context.fillStyle = gTankColour;
+	var tank_top = tank_mid_y - half_tank_height;
+	context.fillRect(
+		x_center - half_tank_width,
+		tank_top,
+		tank_width,
+		tank_height);
+
+	context.strokeStyle = gLCDColour;
+	context.fillStyle = gLCDColour;
+	var lcd_space = 5;
+	var lcd_top = tank_top + lcd_space;
+	var lcd_height = 24;
+	context.fillRect(
+		x_center - half_tank_width + lcd_space,
+		lcd_top,
+		tank_width - 2 * lcd_space,
+		lcd_height);
+
+	context.strokeStyle = gCameraColour;
+	context.fillStyle = gCameraColour;
+	var half_camera_width = 6;
+	var camera_width = half_camera_width * 2;
+	var camera_height = camera_width;
+	var camera_bottom = tank_top - tank_space + 2;
+	var camera_mid = camera_bottom - camera_height;
+	var camera_top = camera_mid - camera_height / 2;
+	var camera_left = x_center - half_camera_width;
+	var camera_right = x_center + half_camera_width;
+	context.moveTo(
+		camera_left,
+		camera_bottom);
+	context.lineTo(
+		camera_left,
+		camera_mid);
+	context.lineTo(
+		x_center - half_camera_width / 2,
+		camera_mid);
+	context.lineTo(
+		camera_left,
+		camera_top);
+	context.lineTo(
+		camera_right,
+		camera_top);
+	context.lineTo(
+		x_center + half_camera_width / 2,
+		camera_mid);
+	context.lineTo(
+		camera_right,
+		camera_mid);
+	context.lineTo(
+		camera_right,
+		camera_bottom);
+	context.fill();
+	var radar_x = x_center;
+	var radar_y = tank_top + tank_height;
+	var transparent_radar = 12;
+	var radar_ratio = radar_percentage / 100;
+	var visible_radar = transparent_radar + 2 + 62 * radar_ratio;
+	hue_length = gRadarColourH - gRadarColourBadH;
+	hue = gRadarColourH - hue_length * (1 - radar_ratio);
+
+	proportional_colour = getHSL(hue, gRadarColourS, gRadarColourL);
+	context.beginPath();
+	context.fillStyle = proportional_colour;
+	context.strokeStyle = proportional_colour;
+	var visible_radius = Math.sqrt(2 * visible_radar * visible_radar)
+	context.arc(
+		radar_x,
+		radar_y,
+		visible_radius,
+		Math.PI / 2 - Math.PI / 8,
+		Math.PI / 2 + Math.PI / 8);
+	var transparent_radius = Math.sqrt(2 * transparent_radar * transparent_radar)
+	context.arc(
+		radar_x,
+		radar_y,
+		transparent_radius,
+		Math.PI / 2 + Math.PI / 8,
+		Math.PI / 2 - Math.PI / 8,
+		true);
+	context.fill();
+}
+
+function draw_canvas_fullscreen() {
+	var width = 30;
+	var height = 30;
+	var offset = 4;
+	var canvas = document.getElementById("canvas_fullscreen");
+	canvas.setAttribute("width", width);
+	canvas.setAttribute("height", height);
+	var inner_width = width - 2 * offset;
+	var inner_height = height - 2 * offset;;
+	var context = canvas.getContext("2d");
+	context.fillStyle = gContourColourNoAlpha;
+	context.strokeStyle = gContourColourNoAlpha;
+	context.lineJoin = "round";
+	context.lineWidth = offset * 2;
+	context.beginPath();
+	context.strokeRect(offset, offset, inner_width, inner_height);
+	context.fillRect(offset + offset, offset + offset, inner_width - 2 * offset, inner_height - 2 * offset);
+	context.lineJoin = "miter";
+	context.strokeStyle = "black";
+	context.lineWidth = 2;
+	context.beginPath();
+	var length = 6;
+	var space = 6;
+	// top left
+	context.moveTo(space + length, space);
+	context.lineTo(space, space);
+	context.lineTo(space, space + length);
+	// top right
+	context.moveTo(width - space - length, space);
+	context.lineTo(width - space, space);
+	context.lineTo(width - space, space + length);
+	// bottom left
+	context.moveTo(space + length, height - space);
+	context.lineTo(space, height - space);
+	context.lineTo(space, height - space - length);
+	// bottom right
+	context.moveTo(width - space - length, height - space);
+	context.lineTo(width - space, height - space);
+	context.lineTo(width - space, height - space - length);
+	context.stroke();
 }
 
 window.addEventListener("gamepadconnected", connecthandler);

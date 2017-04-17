@@ -1,5 +1,6 @@
 """Web site."""
 from __future__ import print_function
+from __future__ import division
 
 
 import argparse
@@ -10,6 +11,7 @@ import socket
 import struct
 import random
 import json
+import math
 
 import zmq
 from zmq.eventloop import ioloop
@@ -43,9 +45,7 @@ class StaticMainHandler(tornado.web.RequestHandler):
     # @tornado.web.asynchronous
     def get(self):
         content = self._loader.load("index.html").generate(
-                videofeed="static/fake_image.png",
-                status="well let's say pending",
-                capture_status="")
+                videofeed="static/fake_image.png")
         self.write(content)
 
 
@@ -81,13 +81,12 @@ class MainHandler(tornado.web.RequestHandler):
         self._last_fire_weapon2 = None
         self._items = set()
         self._running = False
+        self._teams = 0
 
     @tornado.web.asynchronous
     def get(self):
         content = self._loader.load("index.html").generate(
-                videofeed="static/fake_image.png",
-                status="well let's say pending",
-                capture_status="")
+                videofeed="static/fake_image.png")
         self.write(content)
         hello = self._build_hello(False)
         print("Send Hello: " + repr(hello))
@@ -165,22 +164,25 @@ class MainHandler(tornado.web.RequestHandler):
             total_seconds = None
             seconds = None
             running = False
+            if (len(message.teams) != 0):
+                self._teams = len(message.teams)
             if (message.HasField("winner")):
-                status = "Game won by team " + message.winner
                 self._update_running(False)
+                winner = message.winner
             else:
                 self._update_running(message.playing)
                 if (message.playing):
-                    status = "Game running"
                     if (message.HasField("seconds")):
-                        status += " ({} second(s) left)".format(
-                            message.seconds)
                         seconds = message.seconds
                     if (message.HasField("total_seconds")):
                         total_seconds = message.total_seconds
                     running = True
+                    winner = ""
                 else:
-                    status = "Game NOT running"
+                    if (1 == self._teams):
+                        winner = "defeat"
+                    else:
+                        winner = "-"
             # print(status)
             new_items = []
             items = []
@@ -189,13 +191,15 @@ class MainHandler(tornado.web.RequestHandler):
                 if (item_wrapper.name in self._items):
                     items.append(
                         {"name": item_wrapper.name,
-                         "status": item_wrapper.short_status,
                          "capture": item_wrapper.capture,
                          "owner": item_wrapper.team})
                 else:
                     self._items.add(item_wrapper.name)
                     new_items.append(item_wrapper.name)
-            dico = {"status": status, "running": running}
+            dico = {
+                    "running": running,
+                    "winner": winner
+                    }
             if (new_items):
                 print("new_items = " + str(new_items))
                 dico["new_items"] = new_items
@@ -225,15 +229,32 @@ class MainHandler(tornado.web.RequestHandler):
 
     def _handle_player_state(self, payload):
         # WIP
+        print("_handle_player_state")
         message = pb_server_game.PlayerState()
         message.ParseFromString(payload)
-        if (not message.HasField("item")):
-            return
-        item = message.item
-        capture_status = orwell.proxy.item.Item(item).capture_status
-        print(capture_status)
+        dico = {}
+        if (message.HasField("ultrasound")):
+            l2 = 1
+            div = 2
+            ultrasound = math.log(1 + message.ultrasound.distance / div) / l2
+            min_ultrasound = math.log(1 + 0 / div) / l2
+            max_ultrasound = math.log(1 + 255 / div) / l2
+            range_ultrasound = max_ultrasound - min_ultrasound
+            delta = max(0, ultrasound - min_ultrasound)
+            percentage = delta / range_ultrasound * 100
+            dico["ultrasound"] = min(100, percentage)
+        if (message.HasField("battery")):
+            battery = message.battery.voltage_millivolt
+            min_battery = 6500
+            max_battery = 8400
+            range_battery = max_battery - min_battery
+            delta = max(0, battery - min_battery)
+            percentage = delta / range_battery * 100
+            dico["battery"] = min(100, percentage)
+
+        print("PlayerState:" + str(dico))
         for connection in OrwellConnection.all_connections:
-            connection.send(json.dumps({"capture_status": capture_status}))
+            connection.send(json.dumps(dico))
 
     def _build_hello(self, ready):
         pb_message = pb_controller.Hello()
