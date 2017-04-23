@@ -6,9 +6,10 @@
 		<script src="static/sockjs.min.js"></script>
 		<script src="static/welcome.js"></script>
 		<script src="static/screenfull.min.js"></script>
-		<script src="static/bootstrap-3.3.7-dist/js/bootstrap.min.js"></script>
-		<link rel="stylesheet" type="text/css" href="static/bootstrap-3.3.7-dist/css/bootstrap.min.css"/>
 		<style>
+body {
+  margin: 0;
+}
 .test_button { position: absolute; right: 5px; top: 5px; }
 .classic_button_next{ position: absolute; right: 5px; top: 5px; }
 .classic_button_prev { position: absolute; right: 88px; top: 5px; }
@@ -38,6 +39,15 @@
 	margin-top: 5px;
 	display: flex;
 	flex-direction: row;
+}
+.top_right {
+	position:absolute;
+    top:0;
+    right:0;
+	margin-right: 10px;
+	margin-top: 10px;
+	display: inline-block;
+	white-space: nowrap;
 }
 .top_left {
 	position:absolute;
@@ -109,6 +119,21 @@
 .white {
 	background: white;
 }
+.clickable {
+	cursor: pointer;
+}
+.button_white_on_contour {
+	cursor: pointer;
+	padding: 5px 5px;
+	color: white;
+	background-color: rgba(83, 87, 247, 0.5);
+	border:1px solid rgba(83, 87, 247, 0.5);
+	-moz-border-radius: 10px;
+	-webkit-border-radius: 10px;
+	border-radius: 10px;
+	font-size: 250%;
+	font-family: 'Montserrat', sans-serif;
+}
 .blink {
 	animation: blink-animation 0.3s steps(4, start) infinite alternate;
 	-webkit-animation: blink-animation 0.3s steps(4, start) infinite alternate;
@@ -130,6 +155,7 @@
 	}
 }
 .team_name {
+	padding: 0px 10px;
 	color: #F8F8F8;
 	font-size: 250%;
 	z-index: 2;
@@ -172,28 +198,21 @@
 			<div style="position:relative" id="img_container">
 				<image id="videofeed" src="{{ videofeed }}" alt: "Local"  width="100%" style="margin-left:0px;height:auto;"/>
 				<!--<image id="videofeed" src="{{ videofeed }}" alt: "Local"  height="100%" style="margin-left:0px;width:auto;"/>-->
-				<input type="button" class="test_button" id="fullscren" value="full screen" onclick="fullscreen()"/>
+				<canvas id="canvas_fullscreen" class="top_right transparent clickable" onclick="fullscreen()"></canvas>
 				<div id="flags" class="top_middle">
 					<!--<canvas id="back_pie" class=""/>-->
 					<canvas id="pie" width="100" height="100"/>
 				</div>
 				<div id="end_game" class="centered3 big z3"></div>
 				<div id="end_game_border" class="centered3 big z2 border"></div>
-				<button id="start_button" onclick="start()" type="button" class="btn btn-primary centered">Start</button>
+				<button id="start_button" onclick="start()" type="button" class="button_white_on_contour centered">Start</button>
 				<div id="top_left" class="top_left">
 					<div id="top_left_inner" style="position: relative;">
 						<canvas id="canvas_team" class="centered2"></canvas>
 						<div id="team" class="team_name centered2">Team: </div>
 					</div>
 				</div>
-				<div id="hud" class="bottom_left">
-					<div>
-						<ol id="items"/>
-					</div>
-					<div id="status">{{ status }}</div>
-					<div id="capture_status">{{ capture_status }}</div>
-				</div>
-				<canvas id="canvas_battery" class="bottom_right transparent" width="100" height="100">
+				<canvas id="canvas_battery" class="bottom_right" width="100" height="100">
 				</canvas>
 			</div>
 		</div>

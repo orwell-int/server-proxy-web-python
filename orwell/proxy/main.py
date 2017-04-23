@@ -43,9 +43,7 @@ class StaticMainHandler(tornado.web.RequestHandler):
     # @tornado.web.asynchronous
     def get(self):
         content = self._loader.load("index.html").generate(
-                videofeed="static/fake_image.png",
-                status="well let's say pending",
-                capture_status="")
+                videofeed="static/fake_image.png")
         self.write(content)
 
 
@@ -86,9 +84,7 @@ class MainHandler(tornado.web.RequestHandler):
     @tornado.web.asynchronous
     def get(self):
         content = self._loader.load("index.html").generate(
-                videofeed="static/fake_image.png",
-                status="well let's say pending",
-                capture_status="")
+                videofeed="static/fake_image.png")
         self.write(content)
         hello = self._build_hello(False)
         print("Send Hello: " + repr(hello))
@@ -166,27 +162,21 @@ class MainHandler(tornado.web.RequestHandler):
             total_seconds = None
             seconds = None
             running = False
-            print("len(message.teams =", len(message.teams))
             if (len(message.teams) != 0):
                 self._teams = len(message.teams)
             if (message.HasField("winner")):
-                status = "Game won by team " + message.winner
                 self._update_running(False)
                 winner = message.winner
             else:
                 self._update_running(message.playing)
                 if (message.playing):
-                    status = "Game running"
                     if (message.HasField("seconds")):
-                        status += " ({} second(s) left)".format(
-                            message.seconds)
                         seconds = message.seconds
                     if (message.HasField("total_seconds")):
                         total_seconds = message.total_seconds
                     running = True
                     winner = ""
                 else:
-                    status = "Game NOT running"
                     if (1 == self._teams):
                         winner = "defeat"
                     else:
@@ -199,14 +189,12 @@ class MainHandler(tornado.web.RequestHandler):
                 if (item_wrapper.name in self._items):
                     items.append(
                         {"name": item_wrapper.name,
-                         "status": item_wrapper.short_status,
                          "capture": item_wrapper.capture,
                          "owner": item_wrapper.team})
                 else:
                     self._items.add(item_wrapper.name)
                     new_items.append(item_wrapper.name)
             dico = {
-                    "status": status,
                     "running": running,
                     "winner": winner
                     }
@@ -243,11 +231,6 @@ class MainHandler(tornado.web.RequestHandler):
         message.ParseFromString(payload)
         if (not message.HasField("item")):
             return
-        item = message.item
-        capture_status = orwell.proxy.item.Item(item).capture_status
-        print(capture_status)
-        for connection in OrwellConnection.all_connections:
-            connection.send(json.dumps({"capture_status": capture_status}))
 
     def _build_hello(self, ready):
         pb_message = pb_controller.Hello()
